@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { Logo } from "@/components/Logo";
+import { Logo, CareGoMark } from "@/components/Logo";
 import { ReactNode } from "react";
 import { Sparkles } from "lucide-react";
+
 
 export function AuthShell({ title, subtitle, children, footer }: { title: string; subtitle?: string; children: ReactNode; footer?: ReactNode }) {
   return (
