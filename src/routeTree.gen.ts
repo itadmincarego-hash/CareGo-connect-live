@@ -23,7 +23,17 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppTrackingRouteImport } from './routes/app.tracking'
+import { Route as AppSettingsRouteImport } from './routes/app.settings'
+import { Route as AppProviderRouteImport } from './routes/app.provider'
+import { Route as AppOrganisationRouteImport } from './routes/app.organisation'
+import { Route as AppMonitoringRouteImport } from './routes/app.monitoring'
+import { Route as AppMarketplaceRouteImport } from './routes/app.marketplace'
+import { Route as AppHistoryRouteImport } from './routes/app.history'
 import { Route as AppFamilyRouteImport } from './routes/app.family'
+import { Route as AppDevicesRouteImport } from './routes/app.devices'
+import { Route as AppBookRouteImport } from './routes/app.book'
+import { Route as AppAlertsRouteImport } from './routes/app.alerts'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -95,9 +105,59 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppTrackingRoute = AppTrackingRouteImport.update({
+  id: '/tracking',
+  path: '/tracking',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProviderRoute = AppProviderRouteImport.update({
+  id: '/provider',
+  path: '/provider',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOrganisationRoute = AppOrganisationRouteImport.update({
+  id: '/organisation',
+  path: '/organisation',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMonitoringRoute = AppMonitoringRouteImport.update({
+  id: '/monitoring',
+  path: '/monitoring',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMarketplaceRoute = AppMarketplaceRouteImport.update({
+  id: '/marketplace',
+  path: '/marketplace',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppHistoryRoute = AppHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppFamilyRoute = AppFamilyRouteImport.update({
   id: '/family',
   path: '/family',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDevicesRoute = AppDevicesRouteImport.update({
+  id: '/devices',
+  path: '/devices',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBookRoute = AppBookRouteImport.update({
+  id: '/book',
+  path: '/book',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAlertsRoute = AppAlertsRouteImport.update({
+  id: '/alerts',
+  path: '/alerts',
   getParentRoute: () => AppRoute,
 } as any)
 
@@ -115,7 +175,17 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
   '/signup': typeof SignupRoute
+  '/app/alerts': typeof AppAlertsRoute
+  '/app/book': typeof AppBookRoute
+  '/app/devices': typeof AppDevicesRoute
   '/app/family': typeof AppFamilyRoute
+  '/app/history': typeof AppHistoryRoute
+  '/app/marketplace': typeof AppMarketplaceRoute
+  '/app/monitoring': typeof AppMonitoringRoute
+  '/app/organisation': typeof AppOrganisationRoute
+  '/app/provider': typeof AppProviderRoute
+  '/app/settings': typeof AppSettingsRoute
+  '/app/tracking': typeof AppTrackingRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
@@ -131,7 +201,17 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
   '/signup': typeof SignupRoute
+  '/app/alerts': typeof AppAlertsRoute
+  '/app/book': typeof AppBookRoute
+  '/app/devices': typeof AppDevicesRoute
   '/app/family': typeof AppFamilyRoute
+  '/app/history': typeof AppHistoryRoute
+  '/app/marketplace': typeof AppMarketplaceRoute
+  '/app/monitoring': typeof AppMonitoringRoute
+  '/app/organisation': typeof AppOrganisationRoute
+  '/app/provider': typeof AppProviderRoute
+  '/app/settings': typeof AppSettingsRoute
+  '/app/tracking': typeof AppTrackingRoute
   '/app': typeof AppIndexRoute
 }
 export interface FileRoutesById {
@@ -149,7 +229,17 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
   '/signup': typeof SignupRoute
+  '/app/alerts': typeof AppAlertsRoute
+  '/app/book': typeof AppBookRoute
+  '/app/devices': typeof AppDevicesRoute
   '/app/family': typeof AppFamilyRoute
+  '/app/history': typeof AppHistoryRoute
+  '/app/marketplace': typeof AppMarketplaceRoute
+  '/app/monitoring': typeof AppMonitoringRoute
+  '/app/organisation': typeof AppOrganisationRoute
+  '/app/provider': typeof AppProviderRoute
+  '/app/settings': typeof AppSettingsRoute
+  '/app/tracking': typeof AppTrackingRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
@@ -168,7 +258,17 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/pricing'
     | '/signup'
+    | '/app/alerts'
+    | '/app/book'
+    | '/app/devices'
     | '/app/family'
+    | '/app/history'
+    | '/app/marketplace'
+    | '/app/monitoring'
+    | '/app/organisation'
+    | '/app/provider'
+    | '/app/settings'
+    | '/app/tracking'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -184,7 +284,17 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/pricing'
     | '/signup'
+    | '/app/alerts'
+    | '/app/book'
+    | '/app/devices'
     | '/app/family'
+    | '/app/history'
+    | '/app/marketplace'
+    | '/app/monitoring'
+    | '/app/organisation'
+    | '/app/provider'
+    | '/app/settings'
+    | '/app/tracking'
     | '/app'
   id:
     | '__root__'
@@ -201,7 +311,17 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/pricing'
     | '/signup'
+    | '/app/alerts'
+    | '/app/book'
+    | '/app/devices'
     | '/app/family'
+    | '/app/history'
+    | '/app/marketplace'
+    | '/app/monitoring'
+    | '/app/organisation'
+    | '/app/provider'
+    | '/app/settings'
+    | '/app/tracking'
     | '/app/'
   fileRoutesById: FileRoutesById
 }
@@ -321,6 +441,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/tracking': {
+      id: '/app/tracking'
+      path: '/tracking'
+      fullPath: '/app/tracking'
+      preLoaderRoute: typeof AppTrackingRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/settings': {
+      id: '/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/provider': {
+      id: '/app/provider'
+      path: '/provider'
+      fullPath: '/app/provider'
+      preLoaderRoute: typeof AppProviderRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/organisation': {
+      id: '/app/organisation'
+      path: '/organisation'
+      fullPath: '/app/organisation'
+      preLoaderRoute: typeof AppOrganisationRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/monitoring': {
+      id: '/app/monitoring'
+      path: '/monitoring'
+      fullPath: '/app/monitoring'
+      preLoaderRoute: typeof AppMonitoringRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/marketplace': {
+      id: '/app/marketplace'
+      path: '/marketplace'
+      fullPath: '/app/marketplace'
+      preLoaderRoute: typeof AppMarketplaceRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/history': {
+      id: '/app/history'
+      path: '/history'
+      fullPath: '/app/history'
+      preLoaderRoute: typeof AppHistoryRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/family': {
       id: '/app/family'
       path: '/family'
@@ -328,16 +497,57 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppFamilyRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/devices': {
+      id: '/app/devices'
+      path: '/devices'
+      fullPath: '/app/devices'
+      preLoaderRoute: typeof AppDevicesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/book': {
+      id: '/app/book'
+      path: '/book'
+      fullPath: '/app/book'
+      preLoaderRoute: typeof AppBookRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/alerts': {
+      id: '/app/alerts'
+      path: '/alerts'
+      fullPath: '/app/alerts'
+      preLoaderRoute: typeof AppAlertsRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppAlertsRoute: typeof AppAlertsRoute
+  AppBookRoute: typeof AppBookRoute
+  AppDevicesRoute: typeof AppDevicesRoute
   AppFamilyRoute: typeof AppFamilyRoute
+  AppHistoryRoute: typeof AppHistoryRoute
+  AppMarketplaceRoute: typeof AppMarketplaceRoute
+  AppMonitoringRoute: typeof AppMonitoringRoute
+  AppOrganisationRoute: typeof AppOrganisationRoute
+  AppProviderRoute: typeof AppProviderRoute
+  AppSettingsRoute: typeof AppSettingsRoute
+  AppTrackingRoute: typeof AppTrackingRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAlertsRoute: AppAlertsRoute,
+  AppBookRoute: AppBookRoute,
+  AppDevicesRoute: AppDevicesRoute,
   AppFamilyRoute: AppFamilyRoute,
+  AppHistoryRoute: AppHistoryRoute,
+  AppMarketplaceRoute: AppMarketplaceRoute,
+  AppMonitoringRoute: AppMonitoringRoute,
+  AppOrganisationRoute: AppOrganisationRoute,
+  AppProviderRoute: AppProviderRoute,
+  AppSettingsRoute: AppSettingsRoute,
+  AppTrackingRoute: AppTrackingRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
