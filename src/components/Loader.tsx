@@ -58,9 +58,16 @@ export function CareGoInlineLoader({ text = "Loading…" }: { text?: string }) {
 }
 
 /** Branded skeleton block — use instead of generic Skeleton. */
-export function CareGoSkeleton({ className }: { className?: string }) {
+export function CareGoSkeleton({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   return (
     <div
+      style={style}
       className={cn(
         "relative overflow-hidden rounded-lg bg-primary/5",
         "before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer",
@@ -96,7 +103,7 @@ export function ChartSkeleton() {
       <CareGoSkeleton className="h-3 w-32" />
       <div className="mt-6 flex h-40 items-end gap-2">
         {[60, 80, 45, 90, 70, 55, 85, 65, 75, 50, 95, 60].map((h, i) => (
-          <CareGoSkeleton key={i} className="flex-1 rounded-t-md" style={{ height: `${h}%` } as React.CSSProperties} />
+          <CareGoSkeleton key={i} className="flex-1 rounded-t-md" style={{ height: `${h}%` }} />
         ))}
       </div>
     </div>
