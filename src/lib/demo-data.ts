@@ -1,0 +1,148 @@
+// Realistic CareGo demo data shared across the app
+
+export const careRecipient = {
+  name: "Margaret Whitfield",
+  age: 78,
+  address: "14 Oakwood Lane, Bristol BS8 2QR",
+  conditions: ["Mild dementia", "Type 2 diabetes", "Reduced mobility"],
+  photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Margaret&backgroundColor=b6e3f4",
+  wellbeingScore: 82,
+  riskLevel: "low" as const,
+};
+
+export const familyUser = {
+  name: "Sarah Whitfield",
+  relation: "Daughter",
+  email: "sarah.whitfield@example.com",
+  photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah&backgroundColor=c0aede",
+};
+
+export const stats = {
+  wellbeing: 82,
+  alertsToday: 3,
+  devicesOnline: 7,
+  devicesTotal: 8,
+  activeBookings: 1,
+  lastActivity: "8 min ago",
+};
+
+export const liveEvents = [
+  { id: "e1", time: "09:42", type: "movement", title: "Movement detected in kitchen", severity: "info", confidence: 98, reasoning: "Consistent with morning routine pattern." },
+  { id: "e2", time: "09:38", type: "medication", title: "Morning medication taken", severity: "success", confidence: 100, reasoning: "Pill dispenser confirmed dose at 09:38 (scheduled 09:30)." },
+  { id: "e3", time: "09:15", type: "vitals", title: "Heart rate 74 bpm — normal range", severity: "success", confidence: 96, reasoning: "Wearable reading within personal baseline (62–88)." },
+  { id: "e4", time: "08:55", type: "door", title: "Front door opened briefly", severity: "info", confidence: 92, reasoning: "Postal delivery window. No exit detected." },
+  { id: "e5", time: "07:30", type: "sleep", title: "Sleep session ended (6h 42m)", severity: "info", confidence: 99, reasoning: "Below personal average by 18 min. Trend stable." },
+];
+
+export const alerts = [
+  { id: "a1", severity: "high" as const, title: "Possible fall detected — Living Room", time: "Resolved 2d ago", status: "resolved", responder: "Emergency contact + Agent dispatched" },
+  { id: "a2", severity: "medium" as const, title: "Unusual inactivity — 2h 40m", time: "Yesterday 14:20", status: "acknowledged", responder: "Sarah W. acknowledged" },
+  { id: "a3", severity: "low" as const, title: "Medication reminder missed", time: "Today 13:00", status: "open", responder: "AI follow-up scheduled" },
+];
+
+export const aiDecisions = [
+  { id: "d1", time: "13:05", event: "Missed medication window", risk: "low", action: "Sent gentle voice reminder via Echo. Logged outcome.", confidence: 94 },
+  { id: "d2", time: "Yesterday", event: "Extended inactivity 2h 40m", risk: "medium", action: "Pinged Sarah W. and triggered AI check-in call. Resolved.", confidence: 88 },
+  { id: "d3", time: "2 days ago", event: "Sudden floor-level impact pattern", risk: "high", action: "Escalated to 999 + dispatched nearest agent. Margaret responsive.", confidence: 97 },
+];
+
+export const devices = [
+  { id: "d1", name: "Apple Watch Series 9", type: "Wearable", status: "online", battery: 78, lastSync: "2 min ago" },
+  { id: "d2", name: "Living Room Motion", type: "Motion sensor", status: "online", battery: 92, lastSync: "Just now" },
+  { id: "d3", name: "Smart Pill Dispenser", type: "Medication", status: "online", battery: 64, lastSync: "12 min ago" },
+  { id: "d4", name: "Amazon Echo Show 8", type: "Smart speaker", status: "online", battery: null, lastSync: "Live" },
+  { id: "d5", name: "Front Door Sensor", type: "Door sensor", status: "online", battery: 88, lastSync: "1h ago" },
+  { id: "d6", name: "Bedroom Sleep Mat", type: "Environmental", status: "online", battery: 71, lastSync: "7h ago" },
+  { id: "d7", name: "Bathroom Motion", type: "Motion sensor", status: "online", battery: 45, lastSync: "Just now" },
+  { id: "d8", name: "Kitchen Temp Sensor", type: "Environmental", status: "offline", battery: 12, lastSync: "3h ago" },
+];
+
+export const agents = [
+  { id: "ag1", name: "Aisha Patel", role: "Senior Care Specialist", rating: 4.9, jobs: 312, eta: 12, distance: 2.4, photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aisha&backgroundColor=ffd5dc", org: "BrightCare Bristol", verified: ["DBS", "Training", "Right to Work"], phone: "+44 7700 900123" },
+  { id: "ag2", name: "Daniel O'Connor", role: "Mobile Response Carer", rating: 4.8, jobs: 187, eta: 24, distance: 5.1, photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Daniel&backgroundColor=b6e3f4", org: "Independent", verified: ["DBS", "Training"] },
+  { id: "ag3", name: "Priya Nair", role: "Medication & Companionship", rating: 5.0, jobs: 423, eta: 31, distance: 7.0, photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Priya&backgroundColor=d1d4f9", org: "Avon Home Care", verified: ["DBS", "Training", "Right to Work", "First Aid"] },
+];
+
+export const currentBooking = {
+  id: "BK-20406",
+  service: "Urgent welfare check",
+  status: "on_the_way" as const,
+  scheduled: "Today, 14:30",
+  address: "14 Oakwood Lane, Bristol BS8 2QR",
+  notes: "Check on Margaret following missed medication. Front key in safe (code with agent).",
+  agent: agents[0],
+  timeline: [
+    { label: "Booking requested", time: "13:42", done: true },
+    { label: "Agent matched", time: "13:44", done: true },
+    { label: "Agent accepted", time: "13:46", done: true },
+    { label: "On the way", time: "13:51", done: true, active: true },
+    { label: "Arrived", time: "—", done: false },
+    { label: "Checked in", time: "—", done: false },
+    { label: "Completed", time: "—", done: false },
+  ],
+};
+
+export const bookingHistory = [
+  { id: "BK-20399", date: "12 May 2026", service: "Companionship visit", agent: "Priya Nair", duration: "2h", status: "completed", rating: 5 },
+  { id: "BK-20381", date: "08 May 2026", service: "Medication support", agent: "Aisha Patel", duration: "45m", status: "completed", rating: 5 },
+  { id: "BK-20355", date: "01 May 2026", service: "Night response", agent: "Daniel O'Connor", duration: "1h 20m", status: "completed", rating: 4 },
+  { id: "BK-20322", date: "24 Apr 2026", service: "Urgent welfare check", agent: "Aisha Patel", duration: "55m", status: "completed", rating: 5 },
+];
+
+export const orgStats = {
+  staff: 142,
+  available: 38,
+  onVisit: 27,
+  shiftGaps: 4,
+  clientsMonitored: 326,
+  openAlerts: 6,
+  revenue: 184320,
+  visitsThisWeek: 612,
+};
+
+export const orgStaff = [
+  { id: "s1", name: "Aisha Patel", role: "Senior Carer", status: "on_visit", compliance: 100, shifts: 18 },
+  { id: "s2", name: "Daniel O'Connor", role: "Response Carer", status: "available", compliance: 92, shifts: 14 },
+  { id: "s3", name: "Priya Nair", role: "Medication Specialist", status: "available", compliance: 100, shifts: 21 },
+  { id: "s4", name: "Marcus Bell", role: "Night Response", status: "off", compliance: 88, shifts: 12 },
+  { id: "s5", name: "Yuki Tanaka", role: "Companion Carer", status: "on_visit", compliance: 100, shifts: 16 },
+  { id: "s6", name: "Joseph Adeyemi", role: "Senior Carer", status: "available", compliance: 96, shifts: 19 },
+];
+
+export const marketplaceListings = [
+  { id: "m1", carer: "Joseph Adeyemi", org: "BrightCare Bristol", role: "Senior Carer", rate: 22, available: "Tue–Fri eves", rating: 4.9, skills: ["Dementia", "Hoist trained"], distance: 3.1 },
+  { id: "m2", carer: "Yuki Tanaka", org: "Avon Home Care", role: "Companion", rate: 18, available: "Weekends", rating: 4.8, skills: ["Mental health first aid"], distance: 6.4 },
+  { id: "m3", carer: "Marcus Bell", org: "Independent", role: "Night Response", rate: 26, available: "Nights only", rating: 4.7, skills: ["Emergency response", "First Aid"], distance: 2.0 },
+  { id: "m4", carer: "Olu Akande", org: "Severn Care Co.", role: "Senior Carer", rate: 24, available: "Flexible", rating: 5.0, skills: ["Palliative", "Medication"], distance: 4.8 },
+];
+
+export const wellbeingChart = [
+  { d: "Mon", v: 78 }, { d: "Tue", v: 81 }, { d: "Wed", v: 79 },
+  { d: "Thu", v: 84 }, { d: "Fri", v: 80 }, { d: "Sat", v: 83 }, { d: "Sun", v: 82 },
+];
+
+export const heartRateChart = [
+  { t: "00", v: 62 }, { t: "03", v: 58 }, { t: "06", v: 64 },
+  { t: "09", v: 74 }, { t: "12", v: 78 }, { t: "15", v: 72 },
+  { t: "18", v: 76 }, { t: "21", v: 68 },
+];
+
+export const testimonials = [
+  { name: "Eleanor R.", role: "Daughter & Family User", quote: "CareGo gives me the calm of knowing Mum is safe — even when I'm 200 miles away. The AI caught a fall before I could.", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Eleanor" },
+  { name: "Dr. James Mehta", role: "Director, BrightCare Bristol", quote: "We've cut response times by 64% and our compliance reporting now takes minutes. CareGo is operational infrastructure, not just software.", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=James" },
+  { name: "Hannah Liu", role: "Care Agent", quote: "I get clear briefings, live navigation, and proper recognition for my work. It's the first platform that actually feels built for carers.", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Hannah" },
+];
+
+export const pricingTiers = [
+  { name: "Family", price: "£29", per: "/month", description: "Peace of mind for one loved one.", features: ["1 care recipient", "Connect up to 6 devices", "AI companion + alerts", "Family dashboard", "On-demand agent bookings"], cta: "Start Free Trial", featured: false },
+  { name: "Family Plus", price: "£59", per: "/month", description: "Full coverage with priority response.", features: ["Up to 3 recipients", "Unlimited devices", "Priority emergency response", "24/7 live agent support", "Shared family access (10 members)"], cta: "Start Free Trial", featured: true },
+  { name: "Provider & Org", price: "Custom", per: "", description: "For care homes, agencies, and operators.", features: ["Unlimited staff & clients", "Workforce + compliance suite", "Staff marketplace access", "Operational analytics & exports", "Dedicated success manager"], cta: "Book Demo", featured: false },
+];
+
+export const faqs = [
+  { q: "Is CareGo regulated and compliant with UK care standards?", a: "Yes. CareGo is built to align with CQC fundamental standards, GDPR, and ISO 27001 information security practices. We work alongside regulated providers and never replace clinical judgement." },
+  { q: "What devices does CareGo work with?", a: "CareGo integrates with most major wearables (Apple Watch, Fitbit, Garmin), motion and environmental sensors, smart pill dispensers, voice assistants (Alexa, Google), and door/window sensors. We also offer a CareGo Home Kit." },
+  { q: "How does the AI decide when to alert someone?", a: "Our three-tier risk model evaluates each event against a personalised baseline. Low-risk events trigger gentle reminders, medium-risk notifies family or an assigned carer, and high-risk events trigger immediate emergency escalation with full audit trail." },
+  { q: "Are care agents on the marketplace verified?", a: "Every agent on CareGo is DBS-checked, training-verified, and right-to-work confirmed before they can accept a booking. Verification badges are visible on every profile." },
+  { q: "Can I cancel anytime?", a: "Yes. Family plans are monthly with no lock-in. Organisation plans have flexible 30-day terms." },
+];
