@@ -4,13 +4,12 @@ import tailwindcss from "@tailwindcss/vite";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
-
 export default defineConfig({
-  tanstackStart: {
-    server: { entry: "server" },
-  },
-  vite: {
-    base: "/CareGo-connect-live/",
-  },
+  base: "/CareGo-connect-live/",
+  plugins: [
+    TanStackRouterVite(),
+    react(),
+    tailwindcss(),
+    tsconfigPaths(),
+  ],
 });
