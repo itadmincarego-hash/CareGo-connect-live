@@ -5,7 +5,7 @@ import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-  base: "/carewise-connect-live/",
+  base: "/CareGo-connect-live/",
   plugins: [
     TanStackRouterVite(),
     react(),
