@@ -10,7 +10,7 @@ export const getRouter = () => {
     routeTree,
     basepath: "/CareGo-connect-live/",
     context: { queryClient },
-    scrollRestoration: true,
+    scrollRestoration: false,
     defaultPreloadStaleTime: 0,
     defaultPendingComponent: () => <CareGoLoader text="Preparing your dashboard…" />,
     defaultPendingMs: 200,
