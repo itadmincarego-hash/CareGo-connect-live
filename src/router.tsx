@@ -1,13 +1,19 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import { RouterProvider } from "@tanstack/react-router";
-import { getRouter } from "./router";
-import "./styles.css";
+import { QueryClient } from "@tanstack/react-query";
+import { createRouter } from "@tanstack/react-router";
+import { routeTree } from "./routeTree.gen";
+import { CareGoLoader } from "./components/Loader";
 
-const router = getRouter();
+export const getRouter = () => {
+  const queryClient = new QueryClient();
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <RouterProvider router={router} />
-  </StrictMode>
-);
+  const router = createRouter({
+    routeTree,
+    context: { queryClient },
+    scrollRestoration: true,
+    defaultPreloadStaleTime: 0,
+    defaultPendingComponent: () => <CareGoLoader text="Preparing your dashboard…" />,
+    defaultPendingMs: 200,
+  });
+
+  return router;
+};
