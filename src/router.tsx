@@ -8,6 +8,7 @@ export const getRouter = () => {
 
   const router = createRouter({
     routeTree,
+    basepath: "/carewise-connect-live/",
     context: { queryClient },
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
