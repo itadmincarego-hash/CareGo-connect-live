@@ -66,7 +66,7 @@ function BookPage() {
               <p className="mt-1 text-xs text-muted-foreground">Estimated match time: under 4 minutes · DBS, training, right-to-work verified.</p>
             </div>
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" asChild><Link to="/app/family">Cancel</Link></Button>
+              <Button type="button" variant="outline" asChild><Link to="/">Cancel</Link></Button>
               <Button type="submit" className="bg-gradient-hero shadow-glow">Submit booking</Button>
             </div>
           </form>
