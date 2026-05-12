@@ -12,7 +12,7 @@ export const Route = createFileRoute("/forgot-password")({
 });
 
 function ForgotPassword() {
-  const [sent, setSent] = useState(false);
+  const [sent, setSent]       = useState(false);
   const [loading, setLoading] = useState(false);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -22,16 +22,26 @@ function ForgotPassword() {
   }
 
   return (
-    <AuthShell title="Reset your password" subtitle="We'll email you a secure reset link."
-      footer={<Link to="/login" className="font-medium text-primary hover:underline">Back to sign in</Link>}>
+    <AuthShell
+      title="Reset your password"
+      subtitle="We'll email you a secure reset link."
+      footer={<Link to="/login" className="font-medium text-primary hover:underline">Back to sign in</Link>}
+    >
       {sent ? (
         <div className="flex flex-col items-center gap-4 py-8 text-center">
           <CheckCircle className="h-12 w-12 text-primary" />
-          <p className="text-sm text-muted-foreground">Check your email for the reset link.</p>
+          <h3 className="font-semibold text-foreground">Check your inbox</h3>
+          <p className="text-sm text-muted-foreground max-w-xs">
+            We've sent a reset link to your email. It expires in 30 minutes.
+          </p>
+          <Link to="/login" className="text-sm text-primary hover:underline">Back to sign in</Link>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div><Label htmlFor="email">Email</Label><Input id="email" type="email" required className="mt-1.5" placeholder="sarah@example.com" /></div>
+          <div>
+            <Label htmlFor="email">Email address</Label>
+            <Input id="email" type="email" required autoFocus className="mt-1.5" placeholder="sarah@example.com" />
+          </div>
           <Button type="submit" disabled={loading} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
             {loading ? "Sending…" : "Send reset link"}
           </Button>
