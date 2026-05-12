@@ -8,7 +8,9 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 
+import { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
+import { CareGoPreloader } from "@/components/Loader";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -111,9 +113,19 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const [showPreloader, setShowPreloader] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !sessionStorage.getItem("carego-preloader-seen");
+  });
+
+  useEffect(() => {
+    if (!showPreloader) return;
+    sessionStorage.setItem("carego-preloader-seen", "1");
+  }, [showPreloader]);
 
   return (
     <QueryClientProvider client={queryClient}>
+      {showPreloader && <CareGoPreloader onComplete={() => setShowPreloader(false)} />}
       <Outlet />
       <Toaster />
     </QueryClientProvider>

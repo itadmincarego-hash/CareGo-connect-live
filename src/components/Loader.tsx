@@ -1,11 +1,10 @@
+import { useEffect, useState } from "react";
 import { CareGoMark } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 
 /**
- * CareGo unified loading screen.
- *
- * Use everywhere: app startup, auth loading, dashboard loading, monitoring,
- * map, booking, history. Only the `text` prop changes based on context.
+ * CareGo unified loading screen — used for route transitions.
+ * Quick branded pulse on the house+ECG mark.
  */
 export function CareGoLoader({
   text = "Loading CareGo…",
@@ -26,12 +25,7 @@ export function CareGoLoader({
       role="status"
       aria-live="polite"
     >
-      <div className="relative flex h-24 w-24 items-center justify-center">
-        {/* Pulsing node rings */}
-        <span className="absolute inset-0 rounded-2xl bg-primary/20 animate-ping-slow" />
-        <span className="absolute inset-2 rounded-2xl bg-accent/20 animate-ping-slower" />
-        <CareGoMark className="relative h-16 w-16 rounded-2xl shadow-glow animate-float-soft" />
-      </div>
+      <CareGoMark className="h-20 w-auto animate-pulse-glow" ecgMode="pulsing" />
       <div className="flex flex-col items-center gap-2">
         <p className="text-sm font-medium text-foreground/80">{text}</p>
         <div className="flex items-center gap-1.5">
@@ -48,14 +42,81 @@ export function CareGoLoader({
 export function CareGoInlineLoader({ text = "Loading…" }: { text?: string }) {
   return (
     <div className="flex items-center justify-center gap-3 py-10 text-sm text-muted-foreground">
-      <div className="relative h-6 w-6">
-        <span className="absolute inset-0 rounded-full bg-primary/20 animate-ping-slow" />
-        <CareGoMark className="relative h-6 w-6 rounded-md" />
-      </div>
+      <CareGoMark className="h-7 w-auto animate-pulse-glow" ecgMode="pulsing" />
       {text}
     </div>
   );
 }
+
+/**
+ * Full-screen first-load preloader: spinner → logo reveal → wordmark + tagline.
+ * Mounted once at app root, gated by sessionStorage so it only shows on first visit.
+ */
+export function CareGoPreloader({ onComplete }: { onComplete: () => void }) {
+  const [phase, setPhase] = useState<"spinner" | "logo" | "wordmark" | "fading">("spinner");
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setPhase("logo"), 1600);
+    const t2 = setTimeout(() => setPhase("wordmark"), 2600);
+    const t3 = setTimeout(() => setPhase("fading"), 4400);
+    const t4 = setTimeout(() => onComplete(), 5200);
+    return () => { [t1, t2, t3, t4].forEach(clearTimeout); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div
+      className={cn(
+        "fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-gradient-soft",
+        phase === "fading" && "preloader-fade-out",
+      )}
+      role="status"
+      aria-live="polite"
+    >
+      {phase === "spinner" && (
+        <div className="relative flex h-32 w-32 items-center justify-center animate-fade-in">
+          <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full ring-spin">
+            <defs>
+              <linearGradient id="cg-spin" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#1e88e5" />
+                <stop offset="100%" stopColor="#43a047" />
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="42" fill="none" stroke="url(#cg-spin)" strokeWidth="6" strokeLinecap="round" strokeDasharray="60 200" />
+          </svg>
+          <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-accent animate-pulse">
+            Loading
+          </span>
+        </div>
+      )}
+
+      {phase !== "spinner" && (
+        <div className="flex flex-col items-center animate-fade-in">
+          <CareGoMark
+            className="mb-6 h-32 w-auto animate-pulse-glow"
+            ecgMode={phase === "logo" ? "pulsing" : "drawing"}
+          />
+          {phase !== "logo" && (
+            <>
+              <div className="mb-3 flex text-5xl font-bold tracking-tight md:text-6xl">
+                <span className="letter-anim" style={{ color: "#1e88e5" }}>C</span>
+                <span className="letter-anim" style={{ color: "#1e88e5" }}>a</span>
+                <span className="letter-anim" style={{ color: "#1e88e5" }}>r</span>
+                <span className="letter-anim" style={{ color: "#1e88e5" }}>e</span>
+                <span className="letter-anim" style={{ color: "#43a047" }}>G</span>
+                <span className="letter-anim" style={{ color: "#43a047" }}>o</span>
+              </div>
+              <div className="tagline-anim text-base font-medium text-muted-foreground md:text-lg">
+                AI-powered care, always watching, always ready.
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 /** Branded skeleton block — use instead of generic Skeleton. */
 export function CareGoSkeleton({

@@ -239,5 +239,66 @@
     from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: translateY(0); }
   }
+
+  /* CareGo logo ECG animations */
+  .animate-ecg {
+    stroke-dasharray: 60 160;
+    animation: ecg-pulse 1.5s linear infinite;
+  }
+  @keyframes ecg-pulse {
+    0% { stroke-dashoffset: 160; }
+    100% { stroke-dashoffset: -160; }
+  }
+  .ecg-draw {
+    stroke-dasharray: 160;
+    stroke-dashoffset: 160;
+    animation: ecg-draw-in 0.6s ease-out forwards;
+  }
+  @keyframes ecg-draw-in { to { stroke-dashoffset: 0; } }
+  .arrow-fade-in {
+    opacity: 0;
+    animation: fade-in-arrow 0.3s ease-out 0.6s forwards;
+  }
+  @keyframes fade-in-arrow { to { opacity: 1; } }
+
+  /* CareGo preloader */
+  .animate-pulse-glow {
+    animation: pulse-glow 2.4s ease-in-out infinite;
+    filter: drop-shadow(0 0 16px oklch(0.55 0.16 220 / 0.35));
+  }
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 1; filter: drop-shadow(0 0 16px oklch(0.48 0.16 245 / 0.45)); }
+    50%      { opacity: 0.92; filter: drop-shadow(0 0 28px oklch(0.62 0.14 165 / 0.6)); }
+  }
+  .letter-anim {
+    display: inline-block;
+    opacity: 0;
+    animation: letter-reveal 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  }
+  .letter-anim:nth-child(1) { animation-delay: 0.10s; }
+  .letter-anim:nth-child(2) { animation-delay: 0.20s; }
+  .letter-anim:nth-child(3) { animation-delay: 0.30s; }
+  .letter-anim:nth-child(4) { animation-delay: 0.40s; }
+  .letter-anim:nth-child(5) { animation-delay: 0.50s; }
+  .letter-anim:nth-child(6) { animation-delay: 0.60s; }
+  @keyframes letter-reveal {
+    0%   { opacity: 0; transform: translateY(18px) scale(0.85); }
+    100% { opacity: 1; transform: translateY(0)    scale(1); }
+  }
+  .tagline-anim {
+    opacity: 0;
+    animation: fade-in 0.8s ease 0.9s forwards;
+  }
+  .preloader-fade-out {
+    animation: preloader-fade 0.8s ease-in forwards;
+  }
+  @keyframes preloader-fade {
+    to { opacity: 0; visibility: hidden; }
+  }
+  .ring-spin {
+    animation: ring-spin 1.4s linear infinite;
+    transform-origin: center;
+  }
+  @keyframes ring-spin { to { transform: rotate(360deg); } }
 }
 
