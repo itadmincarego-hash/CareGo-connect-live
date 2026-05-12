@@ -16,7 +16,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "CareGo — AI-powered care, always watching, always ready" },
+      { title: "CareGo — AI-powered care, always Monitor, always ready" },
       { name: "description", content: "CareGo helps families, care providers, and organisations monitor wellbeing, respond faster to risks, and coordinate care through one intelligent platform." },
       { property: "og:title", content: "CareGo — AI-powered autonomous care platform" },
       { property: "og:description", content: "Monitor, respond, and coordinate care — all in one connected platform built for the UK care sector." },
