@@ -59,7 +59,7 @@ function Hero() {
             </Badge>
             <h1 className="text-4xl font-semibold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
               AI-powered care,<br />
-              <span className="text-gradient">always watching, always ready.</span>
+              <span className="text-gradient">always monitor, always ready.</span>
             </h1>
             <p className="mt-6 max-w-xl text-lg text-muted-foreground">
               CareGo helps families, care providers, and care organisations monitor wellbeing, respond faster to risks, book trusted support, and coordinate care — through one intelligent platform.
