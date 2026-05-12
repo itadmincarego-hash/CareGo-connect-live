@@ -42,7 +42,7 @@ export function PublicNav() {
           <Button asChild variant="ghost" size="sm" className="hidden md:inline-flex">
             <Link to="/login">Sign in</Link>
           </Button>
-          <Button asChild size="sm" className="hidden md:inline-flex bg-gradient-hero shadow-glow hover:opacity-95">
+          <Button asChild size="sm" className="hidden md:inline-flex bg-primary text-primary-foreground hover:bg-primary/90">
             <Link to="/signup">Start Free Trial</Link>
           </Button>
           <button onClick={() => setOpen(!open)} className="rounded-lg p-2 lg:hidden" aria-label="Toggle menu">
@@ -60,7 +60,7 @@ export function PublicNav() {
             ))}
             <div className="mt-2 flex gap-2 border-t pt-3">
               <Button asChild variant="outline" size="sm" className="flex-1"><Link to="/login">Sign in</Link></Button>
-              <Button asChild size="sm" className="flex-1 bg-gradient-hero"><Link to="/signup">Free Trial</Link></Button>
+              <Button asChild size="sm" className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"><Link to="/signup">Free Trial</Link></Button>
             </div>
           </div>
         </div>
