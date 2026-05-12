@@ -75,7 +75,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "CareGo — AI-powered care, always watching, always ready" },
+      { title: "CareGo — AI-powered care, always Monitor, always ready" },
       { name: "description", content: "AI-powered autonomous care platform for the UK care sector. Monitor wellbeing, respond to risks, and coordinate care in one platform." },
       { name: "author", content: "CareGo" },
       { property: "og:title", content: "CareGo — AI-powered autonomous care platform" },
