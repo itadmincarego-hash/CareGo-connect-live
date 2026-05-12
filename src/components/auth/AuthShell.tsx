@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Logo, CareGoMark } from "@/components/Logo";
+import { BackButton } from "@/components/BackButton";
 import { ReactNode } from "react";
 import { Sparkles } from "lucide-react";
 
@@ -8,7 +9,10 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-2">
       <div className="flex flex-col px-6 py-8 lg:px-12">
-        <Logo />
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <Logo />
+        </div>
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-10">
           <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
           {subtitle && <p className="mt-2 text-muted-foreground">{subtitle}</p>}

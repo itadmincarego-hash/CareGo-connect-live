@@ -1,5 +1,6 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { Logo } from "@/components/Logo";
+import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -77,6 +78,8 @@ function AppLayout() {
           <button onClick={() => setMobileOpen(!mobileOpen)} className="rounded-lg p-2 lg:hidden" aria-label="Menu">
             <div className="h-0.5 w-5 bg-foreground" /><div className="mt-1 h-0.5 w-5 bg-foreground" /><div className="mt-1 h-0.5 w-5 bg-foreground" />
           </button>
+          <BackButton />
+          <Link to="/" aria-label="CareGo home" className="lg:hidden"><Logo size="sm" /></Link>
           <div className="relative hidden flex-1 max-w-md md:block">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Search people, devices, events…" className="pl-9" />

@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Logo } from "@/components/Logo";
+import { BackButton } from "@/components/BackButton";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +33,7 @@ function Onboarding() {
     <div className="min-h-screen bg-gradient-soft">
       <div className="border-b border-border bg-background/80 backdrop-blur">
         <div className="container mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-          <Logo />
+          <div className="flex items-center gap-3"><BackButton /><Logo /></div>
           <p className="text-sm text-muted-foreground">Step {step + 1} of {steps.length}</p>
         </div>
         <div className="h-1 w-full bg-muted">
