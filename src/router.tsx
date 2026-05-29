@@ -1,5 +1,5 @@
 import { QueryClient } from "@tanstack/react-query";
-import { createRouter } from "@tanstack/react-router";
+import { createRouter, createHashHistory } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 import { CareGoLoader } from "./components/Loader";
 
@@ -8,7 +8,7 @@ export const getRouter = () => {
 
   const router = createRouter({
     routeTree,
-    basepath: "/CareGo-connect-live/",
+    history: createHashHistory(),
     context: { queryClient },
     scrollRestoration: false,
     defaultPreloadStaleTime: 0,
