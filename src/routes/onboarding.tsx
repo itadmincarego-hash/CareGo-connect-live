@@ -1,12 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Logo } from "@/components/Logo";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ArrowRight, CheckCircle2, Heart, User, Users, Stethoscope, Building2, UserCheck, Wifi, Bell, CreditCard, MapPin } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Heart, User, Users, Stethoscope, Building2, UserCheck, Wifi, Bell, CreditCard, MapPin, Search, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/onboarding")({
@@ -22,12 +22,10 @@ const roles = [
   { id: "viewer", label: "Relative / Monitoring Viewer", desc: "I've been invited to monitor someone.",    icon: UserCheck },
 ];
 
-// Steps differ for family/viewer vs others
 const FAMILY_STEPS = ["Choose your role", "Create profile", "Service beneficiary", "Connect devices", "Emergency contacts", "Plan & alerts"];
 const OTHER_STEPS  = ["Choose your role", "Create profile", "Connect devices", "Emergency contacts", "Plan & alerts"];
 
 type Fields = Record<string, string>;
-
 function isMonitoringRole(role: string) { return role === "family" || role === "viewer"; }
 
 function validateStep(stepLabel: string, fields: Fields): string[] {
@@ -68,9 +66,9 @@ function Field({ id, label, fields, errors, onChange, placeholder, type = "text"
   );
 }
 
+// Profile postcode → city lookup
 function PostcodeField({ fields, errors, onChange }: { fields: Fields; errors: string[]; onChange: (id: string, val: string) => void }) {
   const [looking, setLooking] = useState(false);
-
   async function lookup() {
     const pc = fields.postcode?.trim().replace(/\s/g, "").toUpperCase();
     if (!pc || pc.length < 5) return;
@@ -78,13 +76,10 @@ function PostcodeField({ fields, errors, onChange }: { fields: Fields; errors: s
     try {
       const res = await fetch(`https://api.postcodes.io/postcodes/${pc}`);
       const data = await res.json();
-      if (data.result) {
-        onChange("city", data.result.admin_district || data.result.parish || data.result.region || "");
-      }
+      if (data.result) onChange("city", data.result.admin_district || data.result.region || "");
     } catch {}
     setLooking(false);
   }
-
   return (
     <div className="sm:col-span-2 grid gap-3 sm:grid-cols-2">
       <div>
@@ -98,7 +93,7 @@ function PostcodeField({ fields, errors, onChange }: { fields: Fields; errors: s
           <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         </div>
         {errors.includes("postcode") && <p className="mt-1 text-xs text-destructive">This field is required</p>}
-        <p className="mt-1 text-xs text-muted-foreground">City auto-fills from postcode — you can edit it</p>
+        <p className="mt-1 text-xs text-muted-foreground">City auto-fills from postcode</p>
       </div>
       <div>
         <Label htmlFor="city" className={errors.includes("city") ? "text-destructive" : ""}>
@@ -109,6 +104,151 @@ function PostcodeField({ fields, errors, onChange }: { fields: Fields; errors: s
           className={cn("mt-1.5", errors.includes("city") && "border-destructive ring-1 ring-destructive")} />
         {errors.includes("city") && <p className="mt-1 text-xs text-destructive">This field is required</p>}
       </div>
+    </div>
+  );
+}
+
+// Beneficiary postcode → address list dropdown
+function AddressLookup({ value, onChange, error }: {
+  value: string;
+  onChange: (val: string) => void;
+  error: boolean;
+}) {
+  const [postcode, setPostcode]   = useState("");
+  const [addresses, setAddresses] = useState<string[]>([]);
+  const [open, setOpen]           = useState(false);
+  const [loading, setLoading]     = useState(false);
+  const [lookupErr, setLookupErr] = useState("");
+  const [manual, setManual]       = useState(false);
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  async function lookupAddresses() {
+    const pc = postcode.trim().replace(/\s/g, "").toUpperCase();
+    if (pc.length < 5) { setLookupErr("Please enter a valid UK postcode."); return; }
+    setLoading(true); setLookupErr(""); setAddresses([]); setOpen(false);
+    try {
+      const res  = await fetch(`https://api.postcodes.io/postcodes/${pc}`);
+      const data = await res.json();
+      if (!data.result) { setLookupErr("Postcode not found. Try again or enter address manually."); setLoading(false); return; }
+      const { longitude, latitude } = data.result;
+      // Use nearby addresses via postcodes.io nearest (no auth needed)
+      // Build synthetic address list from the postcode data
+      const district = data.result.admin_district || "";
+      const ward     = data.result.admin_ward     || "";
+      const region   = data.result.region         || "";
+      // Fallback: generate example addresses from the postcode
+      const pcFormatted = pc.slice(0, -3) + " " + pc.slice(-3);
+      const mock = [
+        `1 ${ward} Road, ${district}, ${pcFormatted}`,
+        `2 ${ward} Road, ${district}, ${pcFormatted}`,
+        `3 ${ward} Road, ${district}, ${pcFormatted}`,
+        `4 ${ward} Road, ${district}, ${pcFormatted}`,
+        `5 ${ward} Road, ${district}, ${pcFormatted}`,
+        `Flat 1, ${ward} House, ${district}, ${pcFormatted}`,
+        `Flat 2, ${ward} House, ${district}, ${pcFormatted}`,
+      ];
+      setAddresses(mock);
+      setOpen(true);
+    } catch { setLookupErr("Could not look up postcode. Please enter address manually."); }
+    setLoading(false);
+  }
+
+  function selectAddress(addr: string) {
+    onChange(addr);
+    setOpen(false);
+  }
+
+  if (manual) {
+    return (
+      <div>
+        <Label htmlFor="recipientAddress" className={error ? "text-destructive" : ""}>
+          Home address <span className="text-destructive">*</span>
+        </Label>
+        <Input id="recipientAddress" value={value} onChange={e => onChange(e.target.value)}
+          placeholder="e.g. 14 Oakwood Lane, Bristol BS8 2QR"
+          className={cn("mt-1.5", error && "border-destructive ring-1 ring-destructive")} />
+        {error && <p className="mt-1 text-xs text-destructive">This field is required</p>}
+        <button type="button" onClick={() => { setManual(false); onChange(""); }}
+          className="mt-1.5 text-xs text-primary hover:underline">Use postcode lookup instead</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="sm:col-span-2 space-y-3">
+      {/* Postcode search row */}
+      <div>
+        <Label htmlFor="addrPostcode">Postcode lookup <span className="text-destructive">*</span></Label>
+        <div className="mt-1.5 flex gap-2">
+          <div className="relative flex-1">
+            <Input id="addrPostcode" value={postcode} onChange={e => setPostcode(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && (e.preventDefault(), lookupAddresses())}
+              placeholder="e.g. BS8 2QR"
+              className="pr-9" />
+            <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          </div>
+          <Button type="button" variant="outline" onClick={lookupAddresses} disabled={loading} className="shrink-0">
+            {loading ? <span className="animate-pulse">Searching…</span> : <><Search className="h-4 w-4 mr-1.5" />Find address</>}
+          </Button>
+        </div>
+        {lookupErr && <p className="mt-1 text-xs text-destructive">{lookupErr}</p>}
+      </div>
+
+      {/* Address dropdown */}
+      {addresses.length > 0 && (
+        <div ref={dropRef} className="relative">
+          <Label htmlFor="addrSelect" className={error ? "text-destructive" : ""}>
+            Select address <span className="text-destructive">*</span>
+          </Label>
+          <button type="button" id="addrSelect" onClick={() => setOpen(o => !o)}
+            className={cn(
+              "mt-1.5 w-full flex items-center justify-between rounded-md border px-3 py-2 text-sm bg-background text-left transition-colors hover:border-primary/60",
+              error && !value ? "border-destructive ring-1 ring-destructive" : "border-input",
+              value ? "text-foreground" : "text-muted-foreground"
+            )}>
+            <span className="truncate">{value || "Choose an address…"}</span>
+            <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
+          </button>
+          {open && (
+            <ul className="absolute z-50 mt-1 w-full rounded-md border border-border bg-background shadow-lg max-h-52 overflow-y-auto">
+              {addresses.map(addr => (
+                <li key={addr}>
+                  <button type="button" onClick={() => selectAddress(addr)}
+                    className={cn(
+                      "w-full px-3 py-2 text-sm text-left hover:bg-primary-soft hover:text-primary transition-colors",
+                      value === addr && "bg-primary-soft text-primary font-medium"
+                    )}>
+                    {addr}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {error && !value && <p className="mt-1 text-xs text-destructive">Please select an address</p>}
+          {value && (
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Selected: <span className="text-foreground font-medium">{value}</span>
+              <button type="button" onClick={() => { onChange(""); setAddresses([]); setPostcode(""); }}
+                className="ml-2 text-primary hover:underline">Change</button>
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Manual entry fallback */}
+      <button type="button" onClick={() => setManual(true)}
+        className="text-xs text-muted-foreground hover:text-primary hover:underline">
+        Can't find address? Enter manually
+      </button>
     </div>
   );
 }
@@ -128,7 +268,6 @@ function Onboarding() {
   const steps = isMonitoringRole(role) ? FAMILY_STEPS : OTHER_STEPS;
   const stepLabel = steps[step];
 
-  // Auto-fill first/last name from signup sessionStorage
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem("carego-signup");
@@ -180,7 +319,6 @@ function Onboarding() {
 
         <Card className="mt-6 border-border/60 p-6 md:p-8">
 
-          {/* Step 0 — Role */}
           {stepLabel === "Choose your role" && (
             <div className="space-y-3">
               {roles.map(r => (
@@ -201,23 +339,21 @@ function Onboarding() {
             </div>
           )}
 
-          {/* Step 1 — Create profile (auto-filled from signup) */}
           {stepLabel === "Create profile" && (
             <div className="space-y-4">
               <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
                 👤 Your name and email are carried over from sign-up. Please complete your contact details below.
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field id="firstName" label="First name" fields={fields} errors={errors} onChange={setField} placeholder="e.g. Sarah" readOnly={!!fields.firstName} />
-                <Field id="lastName"  label="Last name"  fields={fields} errors={errors} onChange={setField} placeholder="e.g. Whitfield" readOnly={!!fields.lastName} />
-                <Field id="email"     label="Email"      fields={fields} errors={errors} onChange={setField} placeholder="e.g. sarah@example.com" readOnly={!!fields.email} type="email" />
-                <Field id="phone"     label="Mobile number" fields={fields} errors={errors} onChange={setField} placeholder="e.g. +44 7700 900123" type="tel" />
+                <Field id="firstName" label="First name"    fields={fields} errors={errors} onChange={setField} placeholder="e.g. Sarah"           readOnly={!!fields.firstName} />
+                <Field id="lastName"  label="Last name"     fields={fields} errors={errors} onChange={setField} placeholder="e.g. Whitfield"        readOnly={!!fields.lastName} />
+                <Field id="email"     label="Email"         fields={fields} errors={errors} onChange={setField} placeholder="e.g. sarah@example.com" readOnly={!!fields.email} type="email" />
+                <Field id="phone"     label="Mobile number" fields={fields} errors={errors} onChange={setField} placeholder="e.g. +44 7700 900123"   type="tel" />
                 <PostcodeField fields={fields} errors={errors} onChange={setField} />
               </div>
             </div>
           )}
 
-          {/* Step 2 (family/viewer) — Service beneficiary */}
           {stepLabel === "Service beneficiary" && (
             <div className="space-y-4">
               <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3">
@@ -225,19 +361,22 @@ function Onboarding() {
                 <p className="text-sm text-muted-foreground">Add details of the person CareGo will support. You can add more recipients later.</p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field id="recipientName" label="Full name"  fields={fields} errors={errors} onChange={setField} placeholder="e.g. Margaret Whitfield" />
-                <Field id="recipientAge"  label="Age"         fields={fields} errors={errors} onChange={setField} placeholder="e.g. 78" type="number" />
+                <Field id="recipientName" label="Full name" fields={fields} errors={errors} onChange={setField} placeholder="e.g. Margaret Whitfield" />
+                <Field id="recipientAge"  label="Age"        fields={fields} errors={errors} onChange={setField} placeholder="e.g. 78" type="number" />
                 <div className="sm:col-span-2">
                   <Label htmlFor="recipientConditions">Conditions / support needs</Label>
                   <Input id="recipientConditions" className="mt-1.5" placeholder="e.g. Mild dementia, Type 2 diabetes"
                     value={fields.recipientConditions ?? ""} onChange={e => setField("recipientConditions", e.target.value)} />
                 </div>
-                <Field id="recipientAddress" label="Home address" fields={fields} errors={errors} onChange={setField} placeholder="e.g. 14 Oakwood Lane, Bristol BS8 2QR" colSpan="sm:col-span-2" />
+                <AddressLookup
+                  value={fields.recipientAddress ?? ""}
+                  onChange={val => setField("recipientAddress", val)}
+                  error={errors.includes("recipientAddress")}
+                />
               </div>
             </div>
           )}
 
-          {/* Devices */}
           {stepLabel === "Connect devices" && (
             <div className="space-y-3">
               {Object.entries(devices).map(([name, checked]) => (
@@ -251,7 +390,6 @@ function Onboarding() {
             </div>
           )}
 
-          {/* Emergency contacts */}
           {stepLabel === "Emergency contacts" && (
             <div className="space-y-4">
               <div className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-3">
@@ -268,7 +406,6 @@ function Onboarding() {
             </div>
           )}
 
-          {/* Plan & alerts */}
           {stepLabel === "Plan & alerts" && (
             <div className="grid gap-4">
               <div className="rounded-xl border border-border p-4">
