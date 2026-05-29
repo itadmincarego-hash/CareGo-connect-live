@@ -1,12 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Logo } from "@/components/Logo";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ArrowRight, CheckCircle2, Heart, User, Users, Stethoscope, Building2, UserCheck, Wifi, Bell, CreditCard } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Heart, User, Users, Stethoscope, Building2, UserCheck, Wifi, Bell, CreditCard, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/onboarding")({
@@ -15,56 +15,100 @@ export const Route = createFileRoute("/onboarding")({
 });
 
 const roles = [
-  { id: "family",  label: "Family / Care Seeker",          desc: "I'm setting up CareGo for a loved one.",     icon: Users },
-  { id: "self",   label: "Individual Receiving Care",      desc: "CareGo will be supporting me directly.",      icon: Heart },
-  { id: "agent",  label: "Care Provider / Agent",          desc: "I deliver care and want to take bookings.",   icon: Stethoscope },
-  { id: "org",    label: "Care Organisation Admin",        desc: "I run a care home or agency.",                icon: Building2 },
-  { id: "viewer", label: "Relative / Monitoring Viewer",   desc: "I've been invited to monitor someone.",      icon: UserCheck },
+  { id: "family",  label: "Family / Care Seeker",        desc: "I'm setting up CareGo for a loved one.",   icon: Users },
+  { id: "self",   label: "Individual Receiving Care",    desc: "CareGo will be supporting me directly.",    icon: Heart },
+  { id: "agent",  label: "Care Provider / Agent",        desc: "I deliver care and want to take bookings.", icon: Stethoscope },
+  { id: "org",    label: "Care Organisation Admin",      desc: "I run a care home or agency.",              icon: Building2 },
+  { id: "viewer", label: "Relative / Monitoring Viewer", desc: "I've been invited to monitor someone.",    icon: UserCheck },
 ];
 
-const steps = ["Choose your role", "Create profile", "Add care recipient", "Connect devices", "Emergency contacts", "Plan & alerts"];
+// Steps differ for family/viewer vs others
+const FAMILY_STEPS = ["Choose your role", "Create profile", "Service beneficiary", "Connect devices", "Emergency contacts", "Plan & alerts"];
+const OTHER_STEPS  = ["Choose your role", "Create profile", "Connect devices", "Emergency contacts", "Plan & alerts"];
 
 type Fields = Record<string, string>;
 
-function validateStep(step: number, fields: Fields): string[] {
-  const missing: string[] = [];
-  if (step === 1) {
-    if (!fields.firstName?.trim())  missing.push("firstName");
-    if (!fields.lastName?.trim())   missing.push("lastName");
-    if (!fields.phone?.trim())      missing.push("phone");
-    if (!fields.city?.trim())       missing.push("city");
+function isMonitoringRole(role: string) { return role === "family" || role === "viewer"; }
+
+function validateStep(stepLabel: string, fields: Fields): string[] {
+  const m: string[] = [];
+  if (stepLabel === "Create profile") {
+    if (!fields.phone?.trim())    m.push("phone");
+    if (!fields.postcode?.trim()) m.push("postcode");
+    if (!fields.city?.trim())     m.push("city");
   }
-  if (step === 2) {
-    if (!fields.recipientName?.trim())    missing.push("recipientName");
-    if (!fields.recipientAge?.trim())     missing.push("recipientAge");
-    if (!fields.recipientAddress?.trim()) missing.push("recipientAddress");
+  if (stepLabel === "Service beneficiary") {
+    if (!fields.recipientName?.trim())    m.push("recipientName");
+    if (!fields.recipientAge?.trim())     m.push("recipientAge");
+    if (!fields.recipientAddress?.trim()) m.push("recipientAddress");
   }
-  if (step === 4) {
-    if (!fields.contact1Name?.trim())  missing.push("contact1Name");
-    if (!fields.contact1Phone?.trim()) missing.push("contact1Phone");
+  if (stepLabel === "Emergency contacts") {
+    if (!fields.contact1Name?.trim())  m.push("contact1Name");
+    if (!fields.contact1Phone?.trim()) m.push("contact1Phone");
   }
-  return missing;
+  return m;
 }
 
-function Field({ id, label, fields, errors, onChange, placeholder, type = "text" }: {
+function Field({ id, label, fields, errors, onChange, placeholder, type = "text", readOnly = false, colSpan }: {
   id: string; label: string; fields: Fields; errors: string[];
   onChange: (id: string, val: string) => void;
-  placeholder?: string; type?: string;
+  placeholder?: string; type?: string; readOnly?: boolean; colSpan?: string;
 }) {
   const invalid = errors.includes(id);
   return (
-    <div>
+    <div className={colSpan}>
       <Label htmlFor={id} className={invalid ? "text-destructive" : ""}>
-        {label} <span className="text-destructive">*</span>
+        {label}{!readOnly && <span className="text-destructive ml-0.5">*</span>}
       </Label>
-      <Input
-        id={id} type={type}
-        value={fields[id] ?? ""}
-        onChange={e => onChange(id, e.target.value)}
-        placeholder={placeholder}
-        className={cn("mt-1.5", invalid && "border-destructive ring-1 ring-destructive focus-visible:ring-destructive")}
-      />
+      <Input id={id} type={type} value={fields[id] ?? ""} onChange={e => onChange(id, e.target.value)}
+        placeholder={placeholder} readOnly={readOnly}
+        className={cn("mt-1.5", invalid && "border-destructive ring-1 ring-destructive", readOnly && "bg-muted/50 cursor-default")} />
       {invalid && <p className="mt-1 text-xs text-destructive">This field is required</p>}
+    </div>
+  );
+}
+
+function PostcodeField({ fields, errors, onChange }: { fields: Fields; errors: string[]; onChange: (id: string, val: string) => void }) {
+  const [looking, setLooking] = useState(false);
+
+  async function lookup() {
+    const pc = fields.postcode?.trim().replace(/\s/g, "").toUpperCase();
+    if (!pc || pc.length < 5) return;
+    setLooking(true);
+    try {
+      const res = await fetch(`https://api.postcodes.io/postcodes/${pc}`);
+      const data = await res.json();
+      if (data.result) {
+        onChange("city", data.result.admin_district || data.result.parish || data.result.region || "");
+      }
+    } catch {}
+    setLooking(false);
+  }
+
+  return (
+    <div className="sm:col-span-2 grid gap-3 sm:grid-cols-2">
+      <div>
+        <Label htmlFor="postcode" className={errors.includes("postcode") ? "text-destructive" : ""}>
+          Postcode <span className="text-destructive">*</span>
+        </Label>
+        <div className="relative mt-1.5">
+          <Input id="postcode" value={fields.postcode ?? ""} onChange={e => onChange("postcode", e.target.value)}
+            onBlur={lookup} placeholder="e.g. BS8 2QR"
+            className={cn("pr-9", errors.includes("postcode") && "border-destructive ring-1 ring-destructive")} />
+          <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        </div>
+        {errors.includes("postcode") && <p className="mt-1 text-xs text-destructive">This field is required</p>}
+        <p className="mt-1 text-xs text-muted-foreground">City auto-fills from postcode — you can edit it</p>
+      </div>
+      <div>
+        <Label htmlFor="city" className={errors.includes("city") ? "text-destructive" : ""}>
+          City <span className="text-destructive">*</span>{looking && <span className="ml-2 text-xs text-primary animate-pulse">Looking up…</span>}
+        </Label>
+        <Input id="city" value={fields.city ?? ""} onChange={e => onChange("city", e.target.value)}
+          placeholder="e.g. Bristol"
+          className={cn("mt-1.5", errors.includes("city") && "border-destructive ring-1 ring-destructive")} />
+        {errors.includes("city") && <p className="mt-1 text-xs text-destructive">This field is required</p>}
+      </div>
     </div>
   );
 }
@@ -75,14 +119,30 @@ function Onboarding() {
   const [role, setRole]     = useState("family");
   const [fields, setFields] = useState<Fields>({});
   const [errors, setErrors] = useState<string[]>([]);
-  // Keep devices/alerts state so back doesn't reset them
   const [devices, setDevices] = useState<Record<string, boolean>>({
-    "Apple Watch Series 9": true,
-    "Smart Pill Dispenser": true,
-    "Amazon Echo Show 8": true,
-    "Motion sensors (3)": true,
+    "Apple Watch Series 9": true, "Smart Pill Dispenser": true,
+    "Amazon Echo Show 8": true,   "Motion sensors (3)": true,
   });
   const [alerts, setAlerts] = useState({ low: false, medium: true, high: true });
+
+  const steps = isMonitoringRole(role) ? FAMILY_STEPS : OTHER_STEPS;
+  const stepLabel = steps[step];
+
+  // Auto-fill first/last name from signup sessionStorage
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("carego-signup");
+      if (raw) {
+        const data = JSON.parse(raw);
+        setFields(f => ({
+          ...f,
+          firstName: f.firstName || data.firstName || "",
+          lastName:  f.lastName  || data.lastName  || "",
+          email:     f.email     || data.email     || "",
+        }));
+      }
+    } catch {}
+  }, []);
 
   function setField(id: string, val: string) {
     setFields(f => ({ ...f, [id]: val }));
@@ -90,14 +150,11 @@ function Onboarding() {
   }
 
   function handleContinue() {
-    const missing = validateStep(step, fields);
-    if (missing.length > 0) { setErrors(missing); return; }
+    const missing = validateStep(stepLabel, fields);
+    if (missing.length) { setErrors(missing); return; }
     setErrors([]);
-    if (step < steps.length - 1) {
-      setStep(s => s + 1);
-    } else {
-      navigate({ to: "/app/family" });
-    }
+    if (step < steps.length - 1) setStep(s => s + 1);
+    else navigate({ to: "/app/family" });
   }
 
   function handleBack() {
@@ -119,12 +176,12 @@ function Onboarding() {
       </div>
 
       <div className="container mx-auto max-w-3xl px-4 py-12">
-        <h1 className="text-3xl font-semibold tracking-tight">{steps[step]}</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">{stepLabel}</h1>
 
         <Card className="mt-6 border-border/60 p-6 md:p-8">
 
           {/* Step 0 — Role */}
-          {step === 0 && (
+          {stepLabel === "Choose your role" && (
             <div className="space-y-3">
               {roles.map(r => (
                 <button key={r.id} onClick={() => setRole(r.id)}
@@ -144,45 +201,48 @@ function Onboarding() {
             </div>
           )}
 
-          {/* Step 1 — Profile */}
-          {step === 1 && (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field id="firstName"  label="First name" placeholder="e.g. Sarah"          fields={fields} errors={errors} onChange={setField} />
-              <Field id="lastName"   label="Last name"  placeholder="e.g. Whitfield"      fields={fields} errors={errors} onChange={setField} />
-              <Field id="phone"      label="Phone"      placeholder="e.g. +44 7700 900123" fields={fields} errors={errors} onChange={setField} type="tel" />
-              <Field id="city"       label="City"       placeholder="e.g. Bristol"         fields={fields} errors={errors} onChange={setField} />
+          {/* Step 1 — Create profile (auto-filled from signup) */}
+          {stepLabel === "Create profile" && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+                👤 Your name and email are carried over from sign-up. Please complete your contact details below.
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field id="firstName" label="First name" fields={fields} errors={errors} onChange={setField} placeholder="e.g. Sarah" readOnly={!!fields.firstName} />
+                <Field id="lastName"  label="Last name"  fields={fields} errors={errors} onChange={setField} placeholder="e.g. Whitfield" readOnly={!!fields.lastName} />
+                <Field id="email"     label="Email"      fields={fields} errors={errors} onChange={setField} placeholder="e.g. sarah@example.com" readOnly={!!fields.email} type="email" />
+                <Field id="phone"     label="Mobile number" fields={fields} errors={errors} onChange={setField} placeholder="e.g. +44 7700 900123" type="tel" />
+                <PostcodeField fields={fields} errors={errors} onChange={setField} />
+              </div>
             </div>
           )}
 
-          {/* Step 2 — Care recipient */}
-          {step === 2 && (
+          {/* Step 2 (family/viewer) — Service beneficiary */}
+          {stepLabel === "Service beneficiary" && (
             <div className="space-y-4">
               <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-soft text-primary"><User className="h-5 w-5" /></div>
-                <p className="text-sm text-muted-foreground">Add the person CareGo will care for. You can add more later.</p>
+                <p className="text-sm text-muted-foreground">Add details of the person CareGo will support. You can add more recipients later.</p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field id="recipientName" label="Full name" placeholder="e.g. Margaret Whitfield" fields={fields} errors={errors} onChange={setField} />
-                <Field id="recipientAge"  label="Age"       placeholder="e.g. 78"                  fields={fields} errors={errors} onChange={setField} type="number" />
+                <Field id="recipientName" label="Full name"  fields={fields} errors={errors} onChange={setField} placeholder="e.g. Margaret Whitfield" />
+                <Field id="recipientAge"  label="Age"         fields={fields} errors={errors} onChange={setField} placeholder="e.g. 78" type="number" />
                 <div className="sm:col-span-2">
                   <Label htmlFor="recipientConditions">Conditions / support needs</Label>
                   <Input id="recipientConditions" className="mt-1.5" placeholder="e.g. Mild dementia, Type 2 diabetes"
                     value={fields.recipientConditions ?? ""} onChange={e => setField("recipientConditions", e.target.value)} />
                 </div>
-                <div className="sm:col-span-2">
-                  <Field id="recipientAddress" label="Home address" placeholder="e.g. 14 Oakwood Lane, Bristol BS8 2QR" fields={fields} errors={errors} onChange={setField} />
-                </div>
+                <Field id="recipientAddress" label="Home address" fields={fields} errors={errors} onChange={setField} placeholder="e.g. 14 Oakwood Lane, Bristol BS8 2QR" colSpan="sm:col-span-2" />
               </div>
             </div>
           )}
 
-          {/* Step 3 — Devices */}
-          {step === 3 && (
+          {/* Devices */}
+          {stepLabel === "Connect devices" && (
             <div className="space-y-3">
               {Object.entries(devices).map(([name, checked]) => (
                 <label key={name} className="flex items-center gap-3 rounded-xl border border-border p-4 hover:border-primary/40 cursor-pointer">
-                  <input type="checkbox" checked={checked} onChange={e => setDevices(d => ({ ...d, [name]: e.target.checked }))}
-                    className="h-4 w-4 rounded border-input text-primary" />
+                  <input type="checkbox" checked={checked} onChange={e => setDevices(d => ({ ...d, [name]: e.target.checked }))} className="h-4 w-4 rounded border-input text-primary" />
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-soft text-primary"><Wifi className="h-4 w-4" /></div>
                   <div className="flex-1"><p className="text-sm font-medium">{name}</p></div>
                   <Badge variant="secondary">Detected</Badge>
@@ -191,8 +251,8 @@ function Onboarding() {
             </div>
           )}
 
-          {/* Step 4 — Emergency contacts */}
-          {step === 4 && (
+          {/* Emergency contacts */}
+          {stepLabel === "Emergency contacts" && (
             <div className="space-y-4">
               <div className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-3">
                 <Field id="contact1Name"     label="Name"     placeholder="e.g. James Whitfield" fields={fields} errors={errors} onChange={setField} />
@@ -200,32 +260,23 @@ function Onboarding() {
                 <Field id="contact1Phone"    label="Phone"    placeholder="e.g. +44 7700 900456"  fields={fields} errors={errors} onChange={setField} type="tel" />
               </div>
               <div className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-3">
-                <div><Label htmlFor="contact2Name">Name</Label><Input id="contact2Name" className="mt-1.5" placeholder="e.g. Dr. Owens" value={fields.contact2Name ?? ""} onChange={e => setField("contact2Name", e.target.value)} /></div>
-                <div><Label htmlFor="contact2Relation">Relation</Label><Input id="contact2Relation" className="mt-1.5" placeholder="e.g. GP" value={fields.contact2Relation ?? ""} onChange={e => setField("contact2Relation", e.target.value)} /></div>
-                <div><Label htmlFor="contact2Phone">Phone</Label><Input id="contact2Phone" className="mt-1.5" placeholder="e.g. +44 7700 900789" value={fields.contact2Phone ?? ""} onChange={e => setField("contact2Phone", e.target.value)} /></div>
+                <div><Label>Name</Label><Input className="mt-1.5" placeholder="e.g. Dr. Owens" value={fields.contact2Name ?? ""} onChange={e => setField("contact2Name", e.target.value)} /></div>
+                <div><Label>Relation</Label><Input className="mt-1.5" placeholder="e.g. GP" value={fields.contact2Relation ?? ""} onChange={e => setField("contact2Relation", e.target.value)} /></div>
+                <div><Label>Phone</Label><Input className="mt-1.5" placeholder="e.g. +44 7700 900789" value={fields.contact2Phone ?? ""} onChange={e => setField("contact2Phone", e.target.value)} /></div>
               </div>
               <Button variant="outline" size="sm">+ Add contact</Button>
             </div>
           )}
 
-          {/* Step 5 — Plan & alerts */}
-          {step === 5 && (
+          {/* Plan & alerts */}
+          {stepLabel === "Plan & alerts" && (
             <div className="grid gap-4">
               <div className="rounded-xl border border-border p-4">
                 <p className="font-medium"><Bell className="mr-1.5 inline h-4 w-4" /> Alert preferences</p>
                 <div className="mt-3 space-y-2 text-sm">
-                  <label className="flex items-center justify-between cursor-pointer">
-                    <span>Low-risk events</span>
-                    <input type="checkbox" checked={alerts.low} onChange={e => setAlerts(a => ({ ...a, low: e.target.checked }))} className="h-4 w-4" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer">
-                    <span>Medium-risk events</span>
-                    <input type="checkbox" checked={alerts.medium} onChange={e => setAlerts(a => ({ ...a, medium: e.target.checked }))} className="h-4 w-4" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer">
-                    <span>High-risk events</span>
-                    <input type="checkbox" checked={alerts.high} onChange={e => setAlerts(a => ({ ...a, high: e.target.checked }))} className="h-4 w-4" />
-                  </label>
+                  <label className="flex items-center justify-between cursor-pointer"><span>Low-risk events</span><input type="checkbox" checked={alerts.low} onChange={e => setAlerts(a => ({ ...a, low: e.target.checked }))} className="h-4 w-4" /></label>
+                  <label className="flex items-center justify-between cursor-pointer"><span>Medium-risk events</span><input type="checkbox" checked={alerts.medium} onChange={e => setAlerts(a => ({ ...a, medium: e.target.checked }))} className="h-4 w-4" /></label>
+                  <label className="flex items-center justify-between cursor-pointer"><span>High-risk events</span><input type="checkbox" checked={alerts.high} onChange={e => setAlerts(a => ({ ...a, high: e.target.checked }))} className="h-4 w-4" /></label>
                 </div>
               </div>
               <div className="rounded-xl border-2 border-primary bg-primary-soft p-4">
@@ -238,9 +289,7 @@ function Onboarding() {
         </Card>
 
         <div className="mt-6 flex items-center justify-between">
-          <Button variant="ghost" onClick={handleBack}>
-            <ArrowLeft className="mr-1.5 h-4 w-4" /> Back
-          </Button>
+          <Button variant="ghost" onClick={handleBack}><ArrowLeft className="mr-1.5 h-4 w-4" /> Back</Button>
           <Button className="bg-gradient-hero shadow-glow" onClick={handleContinue}>
             {step === steps.length - 1 ? "Finish & open dashboard" : "Continue"} <ArrowRight className="ml-1.5 h-4 w-4" />
           </Button>
