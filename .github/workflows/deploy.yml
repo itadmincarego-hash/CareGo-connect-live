@@ -34,6 +34,11 @@ jobs:
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
+      # Copy index.html to 404.html so GitHub Pages serves the SPA
+      # for all deep routes (e.g. /login, /signup, /app/family)
+      - name: Copy index.html to 404.html
+        run: cp dist/index.html dist/404.html
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
