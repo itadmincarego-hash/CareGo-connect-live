@@ -4,14 +4,13 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Mail } from "lucide-react";
+import { ArrowRight, Mail, Eye, EyeOff } from "lucide-react";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Sign in — CareGo" }] }),
   component: Login,
 });
 
-// Demo user registry
 const DEMO_USERS: Record<string, { role: string; destination: string; name: string }> = {
   "family@carego.com":   { role: "family",   destination: "/app/family",       name: "Sarah Whitfield" },
   "provider@carego.com": { role: "provider",  destination: "/app/provider",     name: "Aisha Mensah" },
@@ -20,6 +19,27 @@ const DEMO_USERS: Record<string, { role: string; destination: string; name: stri
 };
 
 type Step = "email" | "password" | "register";
+
+function PasswordInput({ id, name, autoFocus, placeholder }: { id: string; name?: string; autoFocus?: boolean; placeholder?: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <Input
+        id={id} name={name} type={show ? "text" : "password"}
+        required autoFocus={autoFocus} placeholder={placeholder}
+        className="mt-1.5 pr-10"
+      />
+      <button
+        type="button"
+        onClick={() => setShow(v => !v)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+        aria-label={show ? "Hide password" : "Show password"}
+      >
+        {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
+    </div>
+  );
+}
 
 function Login() {
   const navigate = useNavigate();
@@ -46,11 +66,7 @@ function Login() {
     setTimeout(() => {
       setLoading(false);
       const known = DEMO_USERS[email.toLowerCase().trim()];
-      if (known) {
-        setStep("password");
-      } else {
-        setStep("register");
-      }
+      setStep(known ? "password" : "register");
     }, 500);
   }
 
@@ -74,10 +90,7 @@ function Login() {
   function handleRegisterSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      navigate({ to: "/onboarding" });
-    }, 700);
+    setTimeout(() => { setLoading(false); navigate({ to: "/onboarding" }); }, 700);
   }
 
   return (
@@ -98,11 +111,7 @@ function Login() {
         <form onSubmit={handleEmailSubmit} className="space-y-4">
           <div>
             <Label htmlFor="email">Email address</Label>
-            <Input
-              id="email" type="email" required autoFocus
-              value={email} onChange={(e) => setEmail(e.target.value)}
-              placeholder="sarah@example.com" className="mt-1.5"
-            />
+            <Input id="email" type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} placeholder="sarah@example.com" className="mt-1.5" />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" disabled={loading} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
@@ -121,7 +130,7 @@ function Login() {
           </div>
           <div>
             <Label htmlFor="password">Password</Label>
-            <Input id="password" name="password" type="password" required autoFocus placeholder="Enter your password" className="mt-1.5" />
+            <PasswordInput id="password" name="password" autoFocus placeholder="Enter your password" />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex justify-end text-sm">
@@ -151,7 +160,7 @@ function Login() {
           </div>
           <div>
             <Label htmlFor="newpw">Choose a password</Label>
-            <Input id="newpw" type="password" required className="mt-1.5" placeholder="At least 12 characters" />
+            <PasswordInput id="newpw" placeholder="At least 12 characters" />
           </div>
           <Button type="submit" disabled={loading} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
             {loading ? "Creating account…" : "Create account & continue"}
