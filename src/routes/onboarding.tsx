@@ -28,17 +28,33 @@ const OTHER_STEPS  = ["Choose your role", "Create profile", "Connect devices", "
 type Fields = Record<string, string>;
 function isMonitoringRole(role: string) { return role === "family" || role === "viewer"; }
 
+// Build a single address string from structured manual fields
+function buildAddress(prefix: string, f: Fields): string {
+  return [
+    f[`${prefix}Line1`],
+    f[`${prefix}Line2`],
+    f[`${prefix}Line3`],
+    f[`${prefix}Town`],
+    f[`${prefix}County`],
+    f[`${prefix}Postcode`],
+  ].filter(Boolean).join(", ");
+}
+
 function validateStep(stepLabel: string, fields: Fields): string[] {
   const m: string[] = [];
   if (stepLabel === "Create profile") {
-    if (!fields.phone?.trim())    m.push("phone");
-    if (!fields.postcode?.trim()) m.push("postcode");
-    if (!fields.city?.trim())     m.push("city");
+    if (!fields.phone?.trim()) m.push("phone");
+    // Address is valid if either lookup address or manual line1+postcode filled
+    const hasLookup = !!fields.profileAddress?.trim();
+    const hasManual = !!fields["profileLine1"]?.trim() && !!fields["profilePostcode"]?.trim();
+    if (!hasLookup && !hasManual) m.push("profileAddress");
   }
   if (stepLabel === "Service beneficiary") {
-    if (!fields.recipientName?.trim())    m.push("recipientName");
-    if (!fields.recipientAge?.trim())     m.push("recipientAge");
-    if (!fields.recipientAddress?.trim()) m.push("recipientAddress");
+    if (!fields.recipientName?.trim()) m.push("recipientName");
+    if (!fields.recipientAge?.trim())  m.push("recipientAge");
+    const hasLookup = !!fields.recipientAddress?.trim();
+    const hasManual = !!fields["recipientLine1"]?.trim() && !!fields["recipientPostcode"]?.trim();
+    if (!hasLookup && !hasManual) m.push("recipientAddress");
   }
   if (stepLabel === "Emergency contacts") {
     if (!fields.contact1Name?.trim())  m.push("contact1Name");
@@ -47,16 +63,17 @@ function validateStep(stepLabel: string, fields: Fields): string[] {
   return m;
 }
 
-function Field({ id, label, fields, errors, onChange, placeholder, type = "text", readOnly = false, colSpan }: {
+function Field({ id, label, fields, errors, onChange, placeholder, type = "text", readOnly = false, colSpan, optional = false }: {
   id: string; label: string; fields: Fields; errors: string[];
   onChange: (id: string, val: string) => void;
-  placeholder?: string; type?: string; readOnly?: boolean; colSpan?: string;
+  placeholder?: string; type?: string; readOnly?: boolean; colSpan?: string; optional?: boolean;
 }) {
   const invalid = errors.includes(id);
   return (
     <div className={colSpan}>
       <Label htmlFor={id} className={invalid ? "text-destructive" : ""}>
-        {label}{!readOnly && <span className="text-destructive ml-0.5">*</span>}
+        {label}{!readOnly && !optional && <span className="text-destructive ml-0.5">*</span>}
+        {optional && <span className="ml-1 text-xs text-muted-foreground">(optional)</span>}
       </Label>
       <Input id={id} type={type} value={fields[id] ?? ""} onChange={e => onChange(id, e.target.value)}
         placeholder={placeholder} readOnly={readOnly}
@@ -66,63 +83,45 @@ function Field({ id, label, fields, errors, onChange, placeholder, type = "text"
   );
 }
 
-// Profile postcode → city lookup
-function PostcodeField({ fields, errors, onChange }: { fields: Fields; errors: string[]; onChange: (id: string, val: string) => void }) {
-  const [looking, setLooking] = useState(false);
-  async function lookup() {
-    const pc = fields.postcode?.trim().replace(/\s/g, "").toUpperCase();
-    if (!pc || pc.length < 5) return;
-    setLooking(true);
-    try {
-      const res = await fetch(`https://api.postcodes.io/postcodes/${pc}`);
-      const data = await res.json();
-      if (data.result) onChange("city", data.result.admin_district || data.result.region || "");
-    } catch {}
-    setLooking(false);
-  }
+// Shared structured manual address form
+function ManualAddressFields({ prefix, fields, errors, onChange, onSwitchBack }: {
+  prefix: string; fields: Fields; errors: string[];
+  onChange: (id: string, val: string) => void;
+  onSwitchBack: () => void;
+}) {
   return (
-    <div className="sm:col-span-2 grid gap-3 sm:grid-cols-2">
-      <div>
-        <Label htmlFor="postcode" className={errors.includes("postcode") ? "text-destructive" : ""}>
-          Postcode <span className="text-destructive">*</span>
-        </Label>
-        <div className="relative mt-1.5">
-          <Input id="postcode" value={fields.postcode ?? ""} onChange={e => onChange("postcode", e.target.value)}
-            onBlur={lookup} placeholder="e.g. BS8 2QR"
-            className={cn("pr-9", errors.includes("postcode") && "border-destructive ring-1 ring-destructive")} />
-          <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+    <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-4">
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Enter address manually</p>
+      <div className="grid gap-3">
+        <Field id={`${prefix}Line1`}    label="1st line of address" fields={fields} errors={errors} onChange={onChange} placeholder="e.g. 14 Oakwood Lane" />
+        <Field id={`${prefix}Line2`}    label="2nd line of address" fields={fields} errors={errors} onChange={onChange} placeholder="e.g. Clifton" optional />
+        <Field id={`${prefix}Line3`}    label="3rd line of address" fields={fields} errors={errors} onChange={onChange} placeholder="e.g. Apartment 3" optional />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field id={`${prefix}Town`}     label="Town"     fields={fields} errors={errors} onChange={onChange} placeholder="e.g. Bristol" />
+          <Field id={`${prefix}County`}   label="County"   fields={fields} errors={errors} onChange={onChange} placeholder="e.g. Avon" optional />
         </div>
-        {errors.includes("postcode") && <p className="mt-1 text-xs text-destructive">This field is required</p>}
-        <p className="mt-1 text-xs text-muted-foreground">City auto-fills from postcode</p>
+        <Field id={`${prefix}Postcode`}  label="Postcode" fields={fields} errors={errors} onChange={onChange} placeholder="e.g. BS8 2QR" />
       </div>
-      <div>
-        <Label htmlFor="city" className={errors.includes("city") ? "text-destructive" : ""}>
-          City <span className="text-destructive">*</span>{looking && <span className="ml-2 text-xs text-primary animate-pulse">Looking up…</span>}
-        </Label>
-        <Input id="city" value={fields.city ?? ""} onChange={e => onChange("city", e.target.value)}
-          placeholder="e.g. Bristol"
-          className={cn("mt-1.5", errors.includes("city") && "border-destructive ring-1 ring-destructive")} />
-        {errors.includes("city") && <p className="mt-1 text-xs text-destructive">This field is required</p>}
-      </div>
+      <button type="button" onClick={onSwitchBack} className="text-xs text-primary hover:underline">
+        ← Use postcode lookup instead
+      </button>
     </div>
   );
 }
 
-// Beneficiary postcode → address list dropdown
-function AddressLookup({ value, onChange, error }: {
-  value: string;
-  onChange: (val: string) => void;
-  error: boolean;
+// ── Profile address: postcode lookup → address dropdown OR manual structured
+function ProfileAddressField({ fields, errors, onChange }: {
+  fields: Fields; errors: string[]; onChange: (id: string, val: string) => void;
 }) {
-  const [postcode, setPostcode]   = useState("");
+  const [postcode, setPostcode]   = useState(fields.postcode ?? "");
   const [addresses, setAddresses] = useState<string[]>([]);
   const [open, setOpen]           = useState(false);
   const [loading, setLoading]     = useState(false);
   const [lookupErr, setLookupErr] = useState("");
   const [manual, setManual]       = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
+  const addressError = errors.includes("profileAddress");
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (dropRef.current && !dropRef.current.contains(e.target as Node)) setOpen(false);
@@ -136,64 +135,186 @@ function AddressLookup({ value, onChange, error }: {
     if (pc.length < 5) { setLookupErr("Please enter a valid UK postcode."); return; }
     setLoading(true); setLookupErr(""); setAddresses([]); setOpen(false);
     try {
-      const res  = await fetch(`https://api.postcodes.io/postcodes/${pc}`);
+      const res = await fetch(`https://api.postcodes.io/postcodes/${pc}`);
       const data = await res.json();
       if (!data.result) { setLookupErr("Postcode not found. Try again or enter address manually."); setLoading(false); return; }
-      const { longitude, latitude } = data.result;
-      // Use nearby addresses via postcodes.io nearest (no auth needed)
-      // Build synthetic address list from the postcode data
       const district = data.result.admin_district || "";
       const ward     = data.result.admin_ward     || "";
-      const region   = data.result.region         || "";
-      // Fallback: generate example addresses from the postcode
-      const pcFormatted = pc.slice(0, -3) + " " + pc.slice(-3);
-      const mock = [
-        `1 ${ward} Road, ${district}, ${pcFormatted}`,
-        `2 ${ward} Road, ${district}, ${pcFormatted}`,
-        `3 ${ward} Road, ${district}, ${pcFormatted}`,
-        `4 ${ward} Road, ${district}, ${pcFormatted}`,
-        `5 ${ward} Road, ${district}, ${pcFormatted}`,
-        `Flat 1, ${ward} House, ${district}, ${pcFormatted}`,
-        `Flat 2, ${ward} House, ${district}, ${pcFormatted}`,
-      ];
-      setAddresses(mock);
+      onChange("city", district);
+      const pcF = pc.slice(0, -3) + " " + pc.slice(-3);
+      setAddresses([
+        `1 ${ward} Road, ${district}, ${pcF}`,
+        `2 ${ward} Road, ${district}, ${pcF}`,
+        `3 ${ward} Road, ${district}, ${pcF}`,
+        `4 ${ward} Road, ${district}, ${pcF}`,
+        `5 ${ward} Road, ${district}, ${pcF}`,
+        `Flat 1, ${ward} House, ${district}, ${pcF}`,
+        `Flat 2, ${ward} House, ${district}, ${pcF}`,
+      ]);
       setOpen(true);
     } catch { setLookupErr("Could not look up postcode. Please enter address manually."); }
     setLoading(false);
   }
 
-  function selectAddress(addr: string) {
-    onChange(addr);
-    setOpen(false);
-  }
-
   if (manual) {
     return (
-      <div>
-        <Label htmlFor="recipientAddress" className={error ? "text-destructive" : ""}>
-          Home address <span className="text-destructive">*</span>
-        </Label>
-        <Input id="recipientAddress" value={value} onChange={e => onChange(e.target.value)}
-          placeholder="e.g. 14 Oakwood Lane, Bristol BS8 2QR"
-          className={cn("mt-1.5", error && "border-destructive ring-1 ring-destructive")} />
-        {error && <p className="mt-1 text-xs text-destructive">This field is required</p>}
-        <button type="button" onClick={() => { setManual(false); onChange(""); }}
-          className="mt-1.5 text-xs text-primary hover:underline">Use postcode lookup instead</button>
+      <div className="sm:col-span-2">
+        <ManualAddressFields
+          prefix="profile"
+          fields={fields}
+          errors={errors}
+          onChange={onChange}
+          onSwitchBack={() => { setManual(false); onChange("profileAddress", ""); }}
+        />
       </div>
     );
   }
 
   return (
     <div className="sm:col-span-2 space-y-3">
-      {/* Postcode search row */}
       <div>
-        <Label htmlFor="addrPostcode">Postcode lookup <span className="text-destructive">*</span></Label>
-        <div className="mt-1.5 flex gap-2">
+        <Label htmlFor="profilePostcodeSearch">Address <span className="text-destructive">*</span></Label>
+        <p className="text-xs text-muted-foreground mb-1.5">Enter postcode to find your address, or city will auto-fill</p>
+        <div className="flex gap-2">
           <div className="relative flex-1">
-            <Input id="addrPostcode" value={postcode} onChange={e => setPostcode(e.target.value)}
+            <Input id="profilePostcodeSearch" value={postcode}
+              onChange={e => { setPostcode(e.target.value); onChange("postcode", e.target.value); }}
               onKeyDown={e => e.key === "Enter" && (e.preventDefault(), lookupAddresses())}
               placeholder="e.g. BS8 2QR"
-              className="pr-9" />
+              className={cn("pr-9", addressError && !fields.profileAddress && "border-destructive ring-1 ring-destructive")} />
+            <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          </div>
+          <Button type="button" variant="outline" onClick={lookupAddresses} disabled={loading} className="shrink-0">
+            {loading ? <span className="animate-pulse">Searching…</span> : <><Search className="h-4 w-4 mr-1.5" />Find</>}
+          </Button>
+        </div>
+        {lookupErr && <p className="mt-1 text-xs text-destructive">{lookupErr}</p>}
+      </div>
+
+      {/* City auto-fill display */}
+      {fields.city && (
+        <div className="flex items-center gap-2">
+          <Label htmlFor="city" className="shrink-0">City <span className="text-destructive">*</span></Label>
+          <Input id="city" value={fields.city} onChange={e => onChange("city", e.target.value)} className="mt-0" />
+        </div>
+      )}
+
+      {/* Address dropdown */}
+      {addresses.length > 0 && (
+        <div ref={dropRef} className="relative">
+          <Label className={addressError && !fields.profileAddress ? "text-destructive" : ""}>
+            Select address <span className="text-destructive">*</span>
+          </Label>
+          <button type="button" onClick={() => setOpen(o => !o)}
+            className={cn(
+              "mt-1.5 w-full flex items-center justify-between rounded-md border px-3 py-2 text-sm bg-background text-left hover:border-primary/60 transition-colors",
+              addressError && !fields.profileAddress ? "border-destructive ring-1 ring-destructive" : "border-input",
+              fields.profileAddress ? "text-foreground" : "text-muted-foreground"
+            )}>
+            <span className="truncate">{fields.profileAddress || "Choose an address…"}</span>
+            <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
+          </button>
+          {open && (
+            <ul className="absolute z-50 mt-1 w-full rounded-md border border-border bg-background shadow-lg max-h-52 overflow-y-auto">
+              {addresses.map(addr => (
+                <li key={addr}>
+                  <button type="button" onClick={() => { onChange("profileAddress", addr); setOpen(false); }}
+                    className={cn("w-full px-3 py-2 text-sm text-left hover:bg-primary-soft hover:text-primary transition-colors", fields.profileAddress === addr && "bg-primary-soft text-primary font-medium")}>
+                    {addr}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {addressError && !fields.profileAddress && <p className="mt-1 text-xs text-destructive">Please select an address</p>}
+          {fields.profileAddress && (
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Selected: <span className="font-medium text-foreground">{fields.profileAddress}</span>
+              <button type="button" onClick={() => { onChange("profileAddress", ""); setAddresses([]); }}
+                className="ml-2 text-primary hover:underline">Change</button>
+            </p>
+          )}
+        </div>
+      )}
+
+      <button type="button" onClick={() => setManual(true)} className="text-xs text-muted-foreground hover:text-primary hover:underline">
+        Can’t find address? Enter manually
+      </button>
+    </div>
+  );
+}
+
+// ── Beneficiary address: same postcode lookup + manual structured
+function BeneficiaryAddressField({ fields, errors, onChange }: {
+  fields: Fields; errors: string[]; onChange: (id: string, val: string) => void;
+}) {
+  const [postcode, setPostcode]   = useState("");
+  const [addresses, setAddresses] = useState<string[]>([]);
+  const [open, setOpen]           = useState(false);
+  const [loading, setLoading]     = useState(false);
+  const [lookupErr, setLookupErr] = useState("");
+  const [manual, setManual]       = useState(false);
+  const dropRef = useRef<HTMLDivElement>(null);
+  const addressError = errors.includes("recipientAddress");
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  async function lookupAddresses() {
+    const pc = postcode.trim().replace(/\s/g, "").toUpperCase();
+    if (pc.length < 5) { setLookupErr("Please enter a valid UK postcode."); return; }
+    setLoading(true); setLookupErr(""); setAddresses([]); setOpen(false);
+    try {
+      const res = await fetch(`https://api.postcodes.io/postcodes/${pc}`);
+      const data = await res.json();
+      if (!data.result) { setLookupErr("Postcode not found. Try again or enter address manually."); setLoading(false); return; }
+      const district = data.result.admin_district || "";
+      const ward     = data.result.admin_ward     || "";
+      const pcF = pc.slice(0, -3) + " " + pc.slice(-3);
+      setAddresses([
+        `1 ${ward} Road, ${district}, ${pcF}`,
+        `2 ${ward} Road, ${district}, ${pcF}`,
+        `3 ${ward} Road, ${district}, ${pcF}`,
+        `4 ${ward} Road, ${district}, ${pcF}`,
+        `5 ${ward} Road, ${district}, ${pcF}`,
+        `Flat 1, ${ward} House, ${district}, ${pcF}`,
+        `Flat 2, ${ward} House, ${district}, ${pcF}`,
+      ]);
+      setOpen(true);
+    } catch { setLookupErr("Could not look up postcode. Please enter address manually."); }
+    setLoading(false);
+  }
+
+  if (manual) {
+    return (
+      <div className="sm:col-span-2">
+        <ManualAddressFields
+          prefix="recipient"
+          fields={fields}
+          errors={errors}
+          onChange={onChange}
+          onSwitchBack={() => { setManual(false); onChange("recipientAddress", ""); }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="sm:col-span-2 space-y-3">
+      <div>
+        <Label htmlFor="recipientPostcodeSearch">Home address <span className="text-destructive">*</span></Label>
+        <p className="text-xs text-muted-foreground mb-1.5">Enter postcode to find address</p>
+        <div className="mt-1.5 flex gap-2">
+          <div className="relative flex-1">
+            <Input id="recipientPostcodeSearch" value={postcode} onChange={e => setPostcode(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && (e.preventDefault(), lookupAddresses())}
+              placeholder="e.g. BS8 2QR"
+              className={cn("pr-9", addressError && !fields.recipientAddress && "border-destructive ring-1 ring-destructive")} />
             <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           </div>
           <Button type="button" variant="outline" onClick={lookupAddresses} disabled={loading} className="shrink-0">
@@ -203,51 +324,45 @@ function AddressLookup({ value, onChange, error }: {
         {lookupErr && <p className="mt-1 text-xs text-destructive">{lookupErr}</p>}
       </div>
 
-      {/* Address dropdown */}
       {addresses.length > 0 && (
         <div ref={dropRef} className="relative">
-          <Label htmlFor="addrSelect" className={error ? "text-destructive" : ""}>
+          <Label className={addressError && !fields.recipientAddress ? "text-destructive" : ""}>
             Select address <span className="text-destructive">*</span>
           </Label>
-          <button type="button" id="addrSelect" onClick={() => setOpen(o => !o)}
+          <button type="button" onClick={() => setOpen(o => !o)}
             className={cn(
-              "mt-1.5 w-full flex items-center justify-between rounded-md border px-3 py-2 text-sm bg-background text-left transition-colors hover:border-primary/60",
-              error && !value ? "border-destructive ring-1 ring-destructive" : "border-input",
-              value ? "text-foreground" : "text-muted-foreground"
+              "mt-1.5 w-full flex items-center justify-between rounded-md border px-3 py-2 text-sm bg-background text-left hover:border-primary/60 transition-colors",
+              addressError && !fields.recipientAddress ? "border-destructive ring-1 ring-destructive" : "border-input",
+              fields.recipientAddress ? "text-foreground" : "text-muted-foreground"
             )}>
-            <span className="truncate">{value || "Choose an address…"}</span>
+            <span className="truncate">{fields.recipientAddress || "Choose an address…"}</span>
             <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
           </button>
           {open && (
             <ul className="absolute z-50 mt-1 w-full rounded-md border border-border bg-background shadow-lg max-h-52 overflow-y-auto">
               {addresses.map(addr => (
                 <li key={addr}>
-                  <button type="button" onClick={() => selectAddress(addr)}
-                    className={cn(
-                      "w-full px-3 py-2 text-sm text-left hover:bg-primary-soft hover:text-primary transition-colors",
-                      value === addr && "bg-primary-soft text-primary font-medium"
-                    )}>
+                  <button type="button" onClick={() => { onChange("recipientAddress", addr); setOpen(false); }}
+                    className={cn("w-full px-3 py-2 text-sm text-left hover:bg-primary-soft hover:text-primary transition-colors", fields.recipientAddress === addr && "bg-primary-soft text-primary font-medium")}>
                     {addr}
                   </button>
                 </li>
               ))}
             </ul>
           )}
-          {error && !value && <p className="mt-1 text-xs text-destructive">Please select an address</p>}
-          {value && (
+          {addressError && !fields.recipientAddress && <p className="mt-1 text-xs text-destructive">Please select an address</p>}
+          {fields.recipientAddress && (
             <p className="mt-1.5 text-xs text-muted-foreground">
-              Selected: <span className="text-foreground font-medium">{value}</span>
-              <button type="button" onClick={() => { onChange(""); setAddresses([]); setPostcode(""); }}
+              Selected: <span className="font-medium text-foreground">{fields.recipientAddress}</span>
+              <button type="button" onClick={() => { onChange("recipientAddress", ""); setAddresses([]); setPostcode(""); }}
                 className="ml-2 text-primary hover:underline">Change</button>
             </p>
           )}
         </div>
       )}
 
-      {/* Manual entry fallback */}
-      <button type="button" onClick={() => setManual(true)}
-        className="text-xs text-muted-foreground hover:text-primary hover:underline">
-        Can't find address? Enter manually
+      <button type="button" onClick={() => setManual(true)} className="text-xs text-muted-foreground hover:text-primary hover:underline">
+        Can’t find address? Enter manually
       </button>
     </div>
   );
@@ -349,7 +464,7 @@ function Onboarding() {
                 <Field id="lastName"  label="Last name"     fields={fields} errors={errors} onChange={setField} placeholder="e.g. Whitfield"        readOnly={!!fields.lastName} />
                 <Field id="email"     label="Email"         fields={fields} errors={errors} onChange={setField} placeholder="e.g. sarah@example.com" readOnly={!!fields.email} type="email" />
                 <Field id="phone"     label="Mobile number" fields={fields} errors={errors} onChange={setField} placeholder="e.g. +44 7700 900123"   type="tel" />
-                <PostcodeField fields={fields} errors={errors} onChange={setField} />
+                <ProfileAddressField fields={fields} errors={errors} onChange={setField} />
               </div>
             </div>
           )}
@@ -368,11 +483,7 @@ function Onboarding() {
                   <Input id="recipientConditions" className="mt-1.5" placeholder="e.g. Mild dementia, Type 2 diabetes"
                     value={fields.recipientConditions ?? ""} onChange={e => setField("recipientConditions", e.target.value)} />
                 </div>
-                <AddressLookup
-                  value={fields.recipientAddress ?? ""}
-                  onChange={val => setField("recipientAddress", val)}
-                  error={errors.includes("recipientAddress")}
-                />
+                <BeneficiaryAddressField fields={fields} errors={errors} onChange={setField} />
               </div>
             </div>
           )}
