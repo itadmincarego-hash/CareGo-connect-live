@@ -28,23 +28,10 @@ const OTHER_STEPS  = ["Choose your role", "Create profile", "Connect devices", "
 type Fields = Record<string, string>;
 function isMonitoringRole(role: string) { return role === "family" || role === "viewer"; }
 
-// Build a single address string from structured manual fields
-function buildAddress(prefix: string, f: Fields): string {
-  return [
-    f[`${prefix}Line1`],
-    f[`${prefix}Line2`],
-    f[`${prefix}Line3`],
-    f[`${prefix}Town`],
-    f[`${prefix}County`],
-    f[`${prefix}Postcode`],
-  ].filter(Boolean).join(", ");
-}
-
 function validateStep(stepLabel: string, fields: Fields): string[] {
   const m: string[] = [];
   if (stepLabel === "Create profile") {
     if (!fields.phone?.trim()) m.push("phone");
-    // Address is valid if either lookup address or manual line1+postcode filled
     const hasLookup = !!fields.profileAddress?.trim();
     const hasManual = !!fields["profileLine1"]?.trim() && !!fields["profilePostcode"]?.trim();
     if (!hasLookup && !hasManual) m.push("profileAddress");
@@ -93,14 +80,14 @@ function ManualAddressFields({ prefix, fields, errors, onChange, onSwitchBack }:
     <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-4">
       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Enter address manually</p>
       <div className="grid gap-3">
-        <Field id={`${prefix}Line1`}    label="1st line of address" fields={fields} errors={errors} onChange={onChange} placeholder="e.g. 14 Oakwood Lane" />
-        <Field id={`${prefix}Line2`}    label="2nd line of address" fields={fields} errors={errors} onChange={onChange} placeholder="e.g. Clifton" optional />
-        <Field id={`${prefix}Line3`}    label="3rd line of address" fields={fields} errors={errors} onChange={onChange} placeholder="e.g. Apartment 3" optional />
+        <Field id={`${prefix}Line1`}   label="1st line of address" fields={fields} errors={errors} onChange={onChange} placeholder="e.g. 14 Oakwood Lane" />
+        <Field id={`${prefix}Line2`}   label="2nd line of address" fields={fields} errors={errors} onChange={onChange} placeholder="e.g. Clifton" optional />
+        <Field id={`${prefix}Line3`}   label="3rd line of address" fields={fields} errors={errors} onChange={onChange} placeholder="e.g. Apartment 3" optional />
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field id={`${prefix}Town`}     label="Town"     fields={fields} errors={errors} onChange={onChange} placeholder="e.g. Bristol" />
-          <Field id={`${prefix}County`}   label="County"   fields={fields} errors={errors} onChange={onChange} placeholder="e.g. Avon" optional />
+          <Field id={`${prefix}Town`}   label="Town"   fields={fields} errors={errors} onChange={onChange} placeholder="e.g. Bristol" />
+          <Field id={`${prefix}County`} label="County" fields={fields} errors={errors} onChange={onChange} placeholder="e.g. Avon" optional />
         </div>
-        <Field id={`${prefix}Postcode`}  label="Postcode" fields={fields} errors={errors} onChange={onChange} placeholder="e.g. BS8 2QR" />
+        <Field id={`${prefix}Postcode`} label="Postcode" fields={fields} errors={errors} onChange={onChange} placeholder="e.g. BS8 2QR" />
       </div>
       <button type="button" onClick={onSwitchBack} className="text-xs text-primary hover:underline">
         ← Use postcode lookup instead
@@ -113,7 +100,7 @@ function ManualAddressFields({ prefix, fields, errors, onChange, onSwitchBack }:
 function ProfileAddressField({ fields, errors, onChange }: {
   fields: Fields; errors: string[]; onChange: (id: string, val: string) => void;
 }) {
-  const [postcode, setPostcode]   = useState(fields.postcode ?? "");
+  const [postcode, setPostcode]   = useState("");
   const [addresses, setAddresses] = useState<string[]>([]);
   const [open, setOpen]           = useState(false);
   const [loading, setLoading]     = useState(false);
@@ -135,12 +122,11 @@ function ProfileAddressField({ fields, errors, onChange }: {
     if (pc.length < 5) { setLookupErr("Please enter a valid UK postcode."); return; }
     setLoading(true); setLookupErr(""); setAddresses([]); setOpen(false);
     try {
-      const res = await fetch(`https://api.postcodes.io/postcodes/${pc}`);
+      const res  = await fetch(`https://api.postcodes.io/postcodes/${pc}`);
       const data = await res.json();
       if (!data.result) { setLookupErr("Postcode not found. Try again or enter address manually."); setLoading(false); return; }
       const district = data.result.admin_district || "";
       const ward     = data.result.admin_ward     || "";
-      onChange("city", district);
       const pcF = pc.slice(0, -3) + " " + pc.slice(-3);
       setAddresses([
         `1 ${ward} Road, ${district}, ${pcF}`,
@@ -174,11 +160,11 @@ function ProfileAddressField({ fields, errors, onChange }: {
     <div className="sm:col-span-2 space-y-3">
       <div>
         <Label htmlFor="profilePostcodeSearch">Address <span className="text-destructive">*</span></Label>
-        <p className="text-xs text-muted-foreground mb-1.5">Enter postcode to find your address, or city will auto-fill</p>
+        <p className="text-xs text-muted-foreground mb-1.5">Enter your postcode to find your address</p>
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Input id="profilePostcodeSearch" value={postcode}
-              onChange={e => { setPostcode(e.target.value); onChange("postcode", e.target.value); }}
+              onChange={e => setPostcode(e.target.value)}
               onKeyDown={e => e.key === "Enter" && (e.preventDefault(), lookupAddresses())}
               placeholder="e.g. BS8 2QR"
               className={cn("pr-9", addressError && !fields.profileAddress && "border-destructive ring-1 ring-destructive")} />
@@ -191,15 +177,6 @@ function ProfileAddressField({ fields, errors, onChange }: {
         {lookupErr && <p className="mt-1 text-xs text-destructive">{lookupErr}</p>}
       </div>
 
-      {/* City auto-fill display */}
-      {fields.city && (
-        <div className="flex items-center gap-2">
-          <Label htmlFor="city" className="shrink-0">City <span className="text-destructive">*</span></Label>
-          <Input id="city" value={fields.city} onChange={e => onChange("city", e.target.value)} className="mt-0" />
-        </div>
-      )}
-
-      {/* Address dropdown */}
       {addresses.length > 0 && (
         <div ref={dropRef} className="relative">
           <Label className={addressError && !fields.profileAddress ? "text-destructive" : ""}>
@@ -230,7 +207,7 @@ function ProfileAddressField({ fields, errors, onChange }: {
           {fields.profileAddress && (
             <p className="mt-1.5 text-xs text-muted-foreground">
               Selected: <span className="font-medium text-foreground">{fields.profileAddress}</span>
-              <button type="button" onClick={() => { onChange("profileAddress", ""); setAddresses([]); }}
+              <button type="button" onClick={() => { onChange("profileAddress", ""); setAddresses([]); setPostcode(""); }}
                 className="ml-2 text-primary hover:underline">Change</button>
             </p>
           )}
@@ -244,7 +221,7 @@ function ProfileAddressField({ fields, errors, onChange }: {
   );
 }
 
-// ── Beneficiary address: same postcode lookup + manual structured
+// ── Beneficiary address: postcode lookup + manual structured
 function BeneficiaryAddressField({ fields, errors, onChange }: {
   fields: Fields; errors: string[]; onChange: (id: string, val: string) => void;
 }) {
@@ -270,7 +247,7 @@ function BeneficiaryAddressField({ fields, errors, onChange }: {
     if (pc.length < 5) { setLookupErr("Please enter a valid UK postcode."); return; }
     setLoading(true); setLookupErr(""); setAddresses([]); setOpen(false);
     try {
-      const res = await fetch(`https://api.postcodes.io/postcodes/${pc}`);
+      const res  = await fetch(`https://api.postcodes.io/postcodes/${pc}`);
       const data = await res.json();
       if (!data.result) { setLookupErr("Postcode not found. Try again or enter address manually."); setLoading(false); return; }
       const district = data.result.admin_district || "";
