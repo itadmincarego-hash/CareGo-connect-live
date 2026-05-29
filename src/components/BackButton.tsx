@@ -1,10 +1,12 @@
-import { useRouter, useRouterState, Link } from "@tanstack/react-router";
+import { useRouter } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Link } from "@tanstack/react-router";
 
 /**
  * Universal back button. Goes to the previous screen in history when possible,
  * otherwise falls back to home ("/"). Hidden on the home page itself.
+ * Compatible with both BrowserHistory and HashHistory.
  */
 export function BackButton({
   className,
@@ -16,9 +18,14 @@ export function BackButton({
   label?: string;
 }) {
   const router = useRouter();
-  const path = useRouterState({ select: (s) => s.location.pathname });
 
-  if (path === "/") return null;
+  // With HashHistory the real path lives after the '#'
+  const hash = typeof window !== "undefined" ? window.location.hash : "";
+  // hash looks like "#/signup" or "#/" or "" on root
+  const hashPath = hash.replace(/^#/, "") || "/";
+  const isHome = hashPath === "/" || hashPath === "";
+
+  if (isHome) return null;
 
   const canGoBack =
     typeof window !== "undefined" && window.history.length > 1;
