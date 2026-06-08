@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Logo } from "@/components/Logo";
 import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Heart, Activity, AlertTriangle, Calendar, History, Settings, Wifi, ShoppingBag, MapPin,
-  Building2, Users, Bell, Search, Plus, LogOut, ChevronDown
+  Building2, Users, Bell, Search, Plus, LogOut, ChevronDown, UserCircle, KeyRound
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useAuthStore } from "@/store/authStore";
 import { familyUser } from "@/lib/demo-data";
 
 export const Route = createFileRoute("/app")({
@@ -35,9 +36,99 @@ const nav = [
   ]},
 ] as const;
 
+function UserMenu() {
+  const navigate  = useNavigate();
+  const logout    = useAuthStore(s => s.logout);
+  const email     = useAuthStore(s => s.email);
+  const role      = useAuthStore(s => s.role);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Derive display name: use real email prefix or fall back to demo name
+  const isDemo   = !email || email === familyUser.email || email.endsWith("@carego.com");
+  const name     = isDemo ? familyUser.name : email!.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  const photo    = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4`;
+  const roleLabel = role === "provider" ? "Care Provider" : role === "business" ? "Organisation" : role === "admin" ? "Admin" : "Family Plus";
+
+  // Close on outside click
+  useEffect(() => {
+    function handle(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, []);
+
+  function handleLogout() {
+    logout();
+    navigate({ to: "/login" });
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5 text-sm hover:bg-muted/60 transition-colors"
+      >
+        <img src={photo} alt="" className="h-6 w-6 rounded-full bg-muted" />
+        <span className="hidden md:inline">{name.split(" ")[0]}</span>
+        <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-52 rounded-xl border border-border bg-card shadow-lg z-50 overflow-hidden">
+          {/* User info */}
+          <div className="px-4 py-3 border-b border-border">
+            <p className="text-sm font-semibold truncate">{name}</p>
+            <p className="text-xs text-muted-foreground truncate">{email ?? familyUser.email}</p>
+            <Badge variant="secondary" className="mt-1 text-[10px]">{roleLabel}</Badge>
+          </div>
+          {/* Menu items */}
+          <div className="py-1">
+            <Link
+              to="/app/settings"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-4 py-2 text-sm hover:bg-muted/60 transition-colors"
+            >
+              <UserCircle className="h-4 w-4 text-muted-foreground" /> View profile
+            </Link>
+            <Link
+              to="/forgot-password"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-4 py-2 text-sm hover:bg-muted/60 transition-colors"
+            >
+              <KeyRound className="h-4 w-4 text-muted-foreground" /> Reset password
+            </Link>
+          </div>
+          <div className="border-t border-border py-1">
+            <button
+              onClick={handleLogout}
+              className="flex w-full items-center gap-2.5 px-4 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+            >
+              <LogOut className="h-4 w-4" /> Sign out
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const path = useRouterState({ select: (s) => s.location.pathname });
+  const path    = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+  const logout   = useAuthStore(s => s.logout);
+  const email    = useAuthStore(s => s.email);
+  const role     = useAuthStore(s => s.role);
+
+  const isDemo   = !email || email.endsWith("@carego.com");
+  const name     = isDemo ? familyUser.name : email!.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  const photo    = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4`;
+  const roleLabel = role === "provider" ? "Care Provider" : role === "business" ? "Organisation" : role === "admin" ? "Admin" : "Family Plus";
+
+  function handleSignOut() {
+    logout();
+    navigate({ to: "/login" });
+  }
 
   return (
     <div className="flex min-h-screen bg-muted/30">
@@ -59,14 +150,17 @@ function AppLayout() {
               })}
             </div>
           ))}
+          {/* Sidebar user card */}
           <div className="mt-auto rounded-xl border border-border bg-gradient-soft p-3">
             <div className="flex items-center gap-2">
-              <img src={familyUser.photo} alt="" className="h-9 w-9 rounded-full bg-muted" />
+              <img src={photo} alt="" className="h-9 w-9 rounded-full bg-muted" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{familyUser.name}</p>
-                <p className="truncate text-[11px] text-muted-foreground">{familyUser.relation} · Family Plus</p>
+                <p className="truncate text-sm font-medium">{name}</p>
+                <p className="truncate text-[11px] text-muted-foreground">{roleLabel}</p>
               </div>
-              <Link to="/" aria-label="Sign out"><LogOut className="h-4 w-4 text-muted-foreground hover:text-foreground" /></Link>
+              <button onClick={handleSignOut} aria-label="Sign out">
+                <LogOut className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+              </button>
             </div>
           </div>
         </nav>
@@ -90,11 +184,7 @@ function AppLayout() {
               <Bell className="h-4 w-4" />
               <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground">3</span>
             </Button>
-            <button className="flex items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5 text-sm">
-              <img src={familyUser.photo} alt="" className="h-6 w-6 rounded-full bg-muted" />
-              <span className="hidden md:inline">{familyUser.name.split(" ")[0]}</span>
-              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-            </button>
+            <UserMenu />
           </div>
         </header>
         <main className="flex-1 p-4 md:p-8">
