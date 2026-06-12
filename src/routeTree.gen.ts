@@ -34,6 +34,8 @@ import { Route as AppFamilyRouteImport } from './routes/app.family'
 import { Route as AppDevicesRouteImport } from './routes/app.devices'
 import { Route as AppBookRouteImport } from './routes/app.book'
 import { Route as AppAlertsRouteImport } from './routes/app.alerts'
+import { Route as AppAdminRouteImport } from './routes/app.admin'
+import { Route as AppAdminUsersRouteImport } from './routes/app.admin.users'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -160,6 +162,16 @@ const AppAlertsRoute = AppAlertsRouteImport.update({
   path: '/alerts',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdminRoute = AppAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAdminUsersRoute = AppAdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/users',
+  getParentRoute: () => AppAdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -187,6 +199,8 @@ export interface FileRoutesByFullPath {
   '/app/settings': typeof AppSettingsRoute
   '/app/tracking': typeof AppTrackingRoute
   '/app/': typeof AppIndexRoute
+  '/app/admin': typeof AppAdminRouteWithChildren
+  '/app/admin/users': typeof AppAdminUsersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -213,6 +227,8 @@ export interface FileRoutesByTo {
   '/app/settings': typeof AppSettingsRoute
   '/app/tracking': typeof AppTrackingRoute
   '/app': typeof AppIndexRoute
+  '/app/admin': typeof AppAdminRouteWithChildren
+  '/app/admin/users': typeof AppAdminUsersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -241,6 +257,8 @@ export interface FileRoutesById {
   '/app/settings': typeof AppSettingsRoute
   '/app/tracking': typeof AppTrackingRoute
   '/app/': typeof AppIndexRoute
+  '/app/admin': typeof AppAdminRouteWithChildren
+  '/app/admin/users': typeof AppAdminUsersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -270,6 +288,8 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/tracking'
     | '/app/'
+    | '/app/admin'
+    | '/app/admin/users'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -296,6 +316,8 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/tracking'
     | '/app'
+    | '/app/admin'
+    | '/app/admin/users'
   id:
     | '__root__'
     | '/'
@@ -323,6 +345,8 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/tracking'
     | '/app/'
+    | '/app/admin'
+    | '/app/admin/users'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -518,8 +542,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAlertsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/admin': {
+      id: '/app/admin'
+      path: '/admin'
+      fullPath: '/app/admin'
+      preLoaderRoute: typeof AppAdminRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/admin/users': {
+      id: '/app/admin/users'
+      path: '/users'
+      fullPath: '/app/admin/users'
+      preLoaderRoute: typeof AppAdminUsersRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
   }
 }
+
+interface AppAdminRouteChildren {
+  AppAdminUsersRoute: typeof AppAdminUsersRoute
+}
+
+const AppAdminRouteChildren: AppAdminRouteChildren = {
+  AppAdminUsersRoute: AppAdminUsersRoute,
+}
+
+const AppAdminRouteWithChildren = AppAdminRoute._addFileChildren(AppAdminRouteChildren)
 
 interface AppRouteChildren {
   AppAlertsRoute: typeof AppAlertsRoute
@@ -534,6 +582,7 @@ interface AppRouteChildren {
   AppSettingsRoute: typeof AppSettingsRoute
   AppTrackingRoute: typeof AppTrackingRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppAdminRoute: typeof AppAdminRouteWithChildren
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -549,6 +598,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsRoute: AppSettingsRoute,
   AppTrackingRoute: AppTrackingRoute,
   AppIndexRoute: AppIndexRoute,
+  AppAdminRoute: AppAdminRouteWithChildren,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
