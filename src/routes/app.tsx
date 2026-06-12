@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Logo } from "@/components/Logo";
 import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
@@ -13,44 +13,56 @@ import { useAuthStore } from "@/store/authStore";
 import { familyUser } from "@/lib/demo-data";
 
 export const Route = createFileRoute("/app")({
+  // ── Auth guard ──────────────────────────────────────────────────────────────
+  // Runs before the route renders. Reads sessionStorage directly (not the
+  // Zustand store) so it works even on a hard refresh before React mounts.
+  beforeLoad: () => {
+    try {
+      const raw = sessionStorage.getItem("carego_auth");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.token) return; // ✅ valid session — allow through
+      }
+    } catch {}
+    // No valid session — send to login
+    throw redirect({ to: "/login" });
+  },
   component: AppLayout,
 });
 
 const nav = [
   { group: "Care", items: [
-    { to: "/app/family", label: "Family dashboard", icon: Heart },
-    { to: "/app/monitoring", label: "AI monitoring", icon: Activity },
-    { to: "/app/alerts", label: "Alerts & response", icon: AlertTriangle },
-    { to: "/app/book", label: "Book support", icon: Plus },
-    { to: "/app/tracking", label: "Live agent tracking", icon: MapPin },
+    { to: "/app/family",     label: "Family dashboard",    icon: Heart },
+    { to: "/app/monitoring", label: "AI monitoring",        icon: Activity },
+    { to: "/app/alerts",     label: "Alerts & response",   icon: AlertTriangle },
+    { to: "/app/book",       label: "Book support",         icon: Plus },
+    { to: "/app/tracking",   label: "Live agent tracking",  icon: MapPin },
   ]},
   { group: "Workforce", items: [
-    { to: "/app/provider", label: "Provider dashboard", icon: Users },
-    { to: "/app/organisation", label: "Organisation", icon: Building2 },
-    { to: "/app/marketplace", label: "Staff marketplace", icon: ShoppingBag },
+    { to: "/app/provider",      label: "Provider dashboard", icon: Users },
+    { to: "/app/organisation",  label: "Organisation",       icon: Building2 },
+    { to: "/app/marketplace",   label: "Staff marketplace",  icon: ShoppingBag },
   ]},
   { group: "Insights", items: [
-    { to: "/app/history", label: "History & reports", icon: History },
-    { to: "/app/devices", label: "Devices", icon: Wifi },
-    { to: "/app/settings", label: "Settings", icon: Settings },
+    { to: "/app/history",  label: "History & reports", icon: History },
+    { to: "/app/devices",  label: "Devices",           icon: Wifi },
+    { to: "/app/settings", label: "Settings",           icon: Settings },
   ]},
 ] as const;
 
 function UserMenu() {
-  const navigate  = useNavigate();
-  const logout    = useAuthStore(s => s.logout);
-  const email     = useAuthStore(s => s.email);
-  const role      = useAuthStore(s => s.role);
+  const navigate = useNavigate();
+  const logout   = useAuthStore(s => s.logout);
+  const email    = useAuthStore(s => s.email);
+  const role     = useAuthStore(s => s.role);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Derive display name: use real email prefix or fall back to demo name
-  const isDemo   = !email || email === familyUser.email || email.endsWith("@carego.com");
-  const name     = isDemo ? familyUser.name : email!.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-  const photo    = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4`;
+  const isDemo    = !email || email === familyUser.email || email.endsWith("@carego.com");
+  const name      = isDemo ? familyUser.name : email!.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  const photo     = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4`;
   const roleLabel = role === "provider" ? "Care Provider" : role === "business" ? "Organisation" : role === "admin" ? "Admin" : "Family Plus";
 
-  // Close on outside click
   useEffect(() => {
     function handle(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); }
     document.addEventListener("mousedown", handle);
@@ -75,34 +87,24 @@ function UserMenu() {
 
       {open && (
         <div className="absolute right-0 top-full mt-2 w-52 rounded-xl border border-border bg-card shadow-lg z-50 overflow-hidden">
-          {/* User info */}
           <div className="px-4 py-3 border-b border-border">
             <p className="text-sm font-semibold truncate">{name}</p>
             <p className="text-xs text-muted-foreground truncate">{email ?? familyUser.email}</p>
             <Badge variant="secondary" className="mt-1 text-[10px]">{roleLabel}</Badge>
           </div>
-          {/* Menu items */}
           <div className="py-1">
-            <Link
-              to="/app/settings"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-4 py-2 text-sm hover:bg-muted/60 transition-colors"
-            >
+            <Link to="/app/settings" onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-4 py-2 text-sm hover:bg-muted/60 transition-colors">
               <UserCircle className="h-4 w-4 text-muted-foreground" /> View profile
             </Link>
-            <Link
-              to="/forgot-password"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-4 py-2 text-sm hover:bg-muted/60 transition-colors"
-            >
+            <Link to="/forgot-password" onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-4 py-2 text-sm hover:bg-muted/60 transition-colors">
               <KeyRound className="h-4 w-4 text-muted-foreground" /> Reset password
             </Link>
           </div>
           <div className="border-t border-border py-1">
-            <button
-              onClick={handleLogout}
-              className="flex w-full items-center gap-2.5 px-4 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-            >
+            <button onClick={handleLogout}
+              className="flex w-full items-center gap-2.5 px-4 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors">
               <LogOut className="h-4 w-4" /> Sign out
             </button>
           </div>
@@ -114,15 +116,15 @@ function UserMenu() {
 
 function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const path    = useRouterState({ select: (s) => s.location.pathname });
+  const path     = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const logout   = useAuthStore(s => s.logout);
   const email    = useAuthStore(s => s.email);
   const role     = useAuthStore(s => s.role);
 
-  const isDemo   = !email || email.endsWith("@carego.com");
-  const name     = isDemo ? familyUser.name : email!.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-  const photo    = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4`;
+  const isDemo    = !email || email.endsWith("@carego.com");
+  const name      = isDemo ? familyUser.name : email!.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  const photo     = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4`;
   const roleLabel = role === "provider" ? "Care Provider" : role === "business" ? "Organisation" : role === "admin" ? "Admin" : "Family Plus";
 
   function handleSignOut() {

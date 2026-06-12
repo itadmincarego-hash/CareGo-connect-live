@@ -1,6 +1,6 @@
 // CareGo Auth Store — Module 18
-// Persists to sessionStorage so login survives back/forward navigation
-// sessionStorage clears automatically when the browser tab is closed
+// Persists to sessionStorage so login survives back/forward navigation.
+// sessionStorage clears automatically when the browser tab is closed.
 
 import { create } from 'zustand';
 
@@ -16,49 +16,68 @@ interface AuthState {
   logout: () => void;
 }
 
-// Read any previously saved session on startup
+const STORAGE_KEY = 'carego_auth';
+
 function loadSession(): Partial<AuthState> {
   try {
-    const raw = sessionStorage.getItem('carego_auth');
+    const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw);
-    if (parsed?.token) return { ...parsed, isAuthenticated: true };
+    if (parsed?.token) {
+      return {
+        token: parsed.token,
+        userId: parsed.userId ?? null,
+        email: parsed.email ?? null,
+        role: parsed.role ?? null,
+        isAuthenticated: true,
+      };
+    }
   } catch {}
   return {};
 }
 
-function saveSession(state: Partial<AuthState>) {
+function saveSession(data: { token: string; userId: number | null; email: string | null; role: UserRole }) {
   try {
-    sessionStorage.setItem('carego_auth', JSON.stringify({
-      token: state.token,
-      userId: state.userId,
-      email: state.email,
-      role: state.role,
-    }));
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {}
 }
 
 function clearSession() {
-  try { sessionStorage.removeItem('carego_auth'); } catch {}
+  try {
+    sessionStorage.removeItem(STORAGE_KEY);
+  } catch {}
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>(() => ({
+  // Default unauthenticated state
   token: null,
   userId: null,
   email: null,
   role: null,
   isAuthenticated: false,
-  // Hydrate from sessionStorage on first load
+  // Hydrate from sessionStorage immediately — overrides defaults if a session exists
   ...loadSession(),
 
   login: (token, userId, email, role) => {
-    const next = { token, userId, email, role: role as UserRole, isAuthenticated: true };
+    const next = {
+      token,
+      userId,
+      email,
+      role: role as UserRole,
+      isAuthenticated: true,
+    };
     saveSession(next);
-    set(next);
+    useAuthStore.setState(next);
   },
 
   logout: () => {
     clearSession();
-    set({ token: null, userId: null, email: null, role: null, isAuthenticated: false });
+    useAuthStore.setState({
+      token: null,
+      userId: null,
+      email: null,
+      role: null,
+      isAuthenticated: false,
+    });
   },
 }));
