@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Heart, Activity, AlertTriangle, Calendar, History, Settings, Wifi, ShoppingBag, MapPin,
-  Building2, Users, Bell, Search, Plus, LogOut, ChevronDown, UserCircle, KeyRound
+  Building2, Users, Bell, Search, Plus, LogOut, ChevronDown, UserCircle, KeyRound,
+  LayoutDashboard, ShieldCheck
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
@@ -38,7 +39,6 @@ function resolveDisplayName(email: string | null | undefined): string {
   if (!email) return familyUser.name;
   const key = email.toLowerCase();
   if (DEMO_NAMES[key]) return DEMO_NAMES[key];
-  // Real user — derive from email prefix
   return email.split("@")[0]
     .replace(/[._]/g, " ")
     .replace(/\b\w/g, c => c.toUpperCase());
@@ -64,6 +64,13 @@ const nav = [
   ]},
 ] as const;
 
+const adminNav = [
+  { group: "Admin", items: [
+    { to: "/app/admin",       label: "Platform overview",  icon: LayoutDashboard },
+    { to: "/app/admin/users", label: "Users & permissions", icon: ShieldCheck },
+  ]},
+] as const;
+
 function UserMenu() {
   const navigate = useNavigate();
   const logout   = useAuthStore(s => s.logout);
@@ -82,10 +89,7 @@ function UserMenu() {
     return () => document.removeEventListener("mousedown", handle);
   }, []);
 
-  function handleLogout() {
-    logout();
-    navigate({ to: "/login" });
-  }
+  function handleLogout() { logout(); navigate({ to: "/login" }); }
 
   return (
     <div ref={ref} className="relative">
@@ -139,10 +143,10 @@ function AppLayout() {
   const photo     = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4`;
   const roleLabel = role === "provider" ? "Care Provider" : role === "business" ? "Organisation" : role === "admin" ? "Admin" : "Family Plus";
 
-  function handleSignOut() {
-    logout();
-    navigate({ to: "/login" });
-  }
+  // Show admin nav for admins, regular nav for everyone else
+  const activeNav = role === "admin" ? adminNav : nav;
+
+  function handleSignOut() { logout(); navigate({ to: "/login" }); }
 
   return (
     <div className="flex min-h-screen bg-muted/30">
@@ -150,11 +154,11 @@ function AppLayout() {
       <aside className={`fixed inset-y-0 left-0 z-40 w-64 transform border-r border-border bg-sidebar transition-transform lg:static lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex h-16 items-center border-b border-border px-5"><Logo /></div>
         <nav className="flex h-[calc(100%-4rem)] flex-col overflow-y-auto p-3">
-          {nav.map(g => (
+          {activeNav.map(g => (
             <div key={g.group} className="mb-4">
               <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{g.group}</p>
               {g.items.map(item => {
-                const active = path === item.to;
+                const active = path === item.to || path.startsWith(item.to + "/");
                 return (
                   <Link key={item.to} to={item.to} onClick={() => setMobileOpen(false)}
                     className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${active ? "bg-primary-soft text-primary" : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"}`}>
