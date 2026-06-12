@@ -1,157 +1,272 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Users, CalendarCheck, Activity, AlertTriangle, Server, ShieldCheck } from "lucide-react";
-import { PageHeader } from "./app";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { PageHeader } from "@/routes/app";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Heart, Activity, AlertTriangle, Bell, Bot, Calendar, Footprints, MapPin,
+  MessageSquare, Phone, Pill, Plus, Sparkles, Wifi, Clock, ArrowRight
+} from "lucide-react";
+import { StatCard, SeverityBadge, LiveDot, MiniLineChart, MiniBarChart } from "@/components/app/widgets";
+import {
+  careRecipient, stats, liveEvents, aiDecisions, alerts,
+  heartRateChart, wellbeingChart, currentBooking
+} from "@/lib/demo-data";
 
 export const Route = createFileRoute("/app/admin")({
-  component: AdminDashboard,
+  component: AdminFamilyView,
 });
 
-function StatCard({ icon, label, value, trend, color = "primary" }: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  trend?: string;
-  color?: "primary" | "accent" | "warning" | "destructive";
-}) {
-  const colorMap = {
-    primary:     "bg-primary-soft text-primary",
-    accent:      "bg-accent-soft text-accent",
-    warning:     "bg-warning/10 text-warning-foreground",
-    destructive: "bg-destructive/10 text-destructive",
-  };
+// Time-based greeting
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+function AdminFamilyView() {
   return (
-    <div className="rounded-xl border border-border bg-card shadow-card p-5">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-medium text-muted-foreground">{label}</span>
-        <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${colorMap[color]}`}>{icon}</span>
+    <div>
+      <PageHeader
+        title={`${greeting()}, Admin`}
+        subtitle="Admin view — showing demo family data."
+        badge={
+          <Badge className="border-accent/20 bg-accent-soft text-accent hover:bg-accent-soft">
+            <LiveDot /><span className="ml-1.5">All systems normal</span>
+          </Badge>
+        }
+        action={
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm">
+              <MessageSquare className="mr-1.5 h-4 w-4" /> Message
+            </Button>
+            <Button asChild size="sm" className="bg-gradient-hero shadow-glow">
+              <Link to="/app/book"><Plus className="mr-1.5 h-4 w-4" /> Book support</Link>
+            </Button>
+          </div>
+        }
+      />
+
+      {/* Recipient summary */}
+      <Card className="mb-6 border-border/60 p-5">
+        <div className="flex flex-wrap items-center gap-5">
+          <Avatar className="h-16 w-16 ring-2 ring-primary-soft">
+            <AvatarImage src={careRecipient.photo} />
+            <AvatarFallback>MW</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-semibold">{careRecipient.name}</h2>
+              <span className="text-sm text-muted-foreground">· {careRecipient.age}</span>
+              <Badge variant="secondary" className="text-xs">{careRecipient.conditions.join(" · ")}</Badge>
+            </div>
+            <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+              <MapPin className="h-3.5 w-3.5" /> {careRecipient.address}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm">
+              <Phone className="mr-1.5 h-4 w-4" /> Call
+            </Button>
+            <Button variant="outline" size="sm">
+              <Bot className="mr-1.5 h-4 w-4" /> Request AI check-in
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Stat cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <StatCard icon={Heart}         label="Wellbeing score"  value={stats.wellbeing}                         hint="+4 vs last week"                  tone="primary" />
+        <StatCard icon={AlertTriangle} label="Alerts today"     value={stats.alertsToday}                       hint="1 open · 2 resolved"              tone="warning" />
+        <StatCard icon={Footprints}    label="Last activity"    value={stats.lastActivity}                      hint="Kitchen · normal pattern"         tone="success" />
+        <StatCard icon={Wifi}          label="Devices online"   value={`${stats.devicesOnline}/${stats.devicesTotal}`} hint="Kitchen temp sensor offline" tone="default" />
+        <StatCard icon={Calendar}      label="Active bookings"  value={stats.activeBookings}                    hint="Aisha P. · ETA 12 min"            tone="primary" />
       </div>
-      <p className="text-2xl font-semibold tracking-tight">{value}</p>
-      {trend && <p className="mt-1 text-xs text-success">{trend} this month</p>}
+
+      {/* Main grid */}
+      <div className="mt-6 grid gap-6 lg:grid-cols-3">
+        {/* Live status + charts */}
+        <Card className="lg:col-span-2 border-border/60 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold">Live status</h3>
+              <p className="text-xs text-muted-foreground">Updated just now</p>
+            </div>
+            <Badge className="bg-accent-soft text-accent border-0"><LiveDot /><span className="ml-1.5">Live</span></Badge>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <StatusPill icon={Activity}  label="Movement"   value="Active · Kitchen"        tone="success" />
+            <StatusPill icon={Heart}     label="Heart rate" value="74 bpm"                  tone="success" />
+            <StatusPill icon={Pill}      label="Medication" value="On track · 09:38"        tone="success" />
+            <StatusPill icon={Clock}     label="Inactivity" value="No prolonged inactivity" tone="success" />
+            <StatusPill icon={MapPin}    label="Home zone"  value="Inside · Living Room"    tone="success" />
+            <StatusPill icon={Wifi}      label="Devices"    value="7 online · 1 offline"    tone="warning" />
+          </div>
+          <div className="mt-5 grid gap-5 md:grid-cols-2">
+            <ChartCard title="Heart rate · today"  hint="Normal range 62–88"><MiniLineChart data={heartRateChart} /></ChartCard>
+            <ChartCard title="Wellbeing · 7 days"  hint="Trending up"><MiniBarChart data={wellbeingChart} color="oklch(0.62 0.14 165)" /></ChartCard>
+          </div>
+        </Card>
+
+        {/* Active booking */}
+        <Card className="border-border/60 p-5">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold">Support on the way</h3>
+            <Badge className="bg-primary-soft text-primary border-0">In progress</Badge>
+          </div>
+          <div className="mt-4 flex items-center gap-3">
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={currentBooking.agent.photo} />
+              <AvatarFallback>AP</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold">{currentBooking.agent.name}</p>
+              <p className="truncate text-xs text-muted-foreground">{currentBooking.agent.role}</p>
+            </div>
+          </div>
+          <div className="mt-4 rounded-xl border border-border bg-gradient-to-br from-primary-soft to-accent-soft p-4">
+            <p className="text-xs text-muted-foreground">ETA</p>
+            <p className="text-2xl font-semibold text-gradient">12 minutes</p>
+            <p className="text-xs text-muted-foreground">2.4 mi · live route</p>
+          </div>
+          <Button asChild className="mt-4 w-full bg-gradient-hero shadow-glow">
+            <Link to="/app/tracking">View live tracking <ArrowRight className="ml-1.5 h-4 w-4" /></Link>
+          </Button>
+        </Card>
+      </div>
+
+      {/* AI decisions + Alert centre */}
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <Card className="border-border/60 p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <h3 className="font-semibold">Recent AI decisions</h3>
+            </div>
+            <Link to="/app/monitoring" className="text-xs font-medium text-primary hover:underline">View all</Link>
+          </div>
+          <div className="mt-4 space-y-3">
+            {aiDecisions.map(d => (
+              <div key={d.id} className="rounded-xl border border-border p-3.5">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">{d.event}</p>
+                  <SeverityBadge severity={d.risk as "low" | "medium" | "high"} />
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{d.action}</p>
+                <p className="mt-1.5 text-[10px] text-muted-foreground">{d.time} · {d.confidence}% confidence</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="border-border/60 p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bell className="h-4 w-4 text-primary" />
+              <h3 className="font-semibold">Alert centre</h3>
+            </div>
+            <Link to="/app/alerts" className="text-xs font-medium text-primary hover:underline">Open response centre</Link>
+          </div>
+          <div className="mt-4 space-y-3">
+            {alerts.map(a => (
+              <div key={a.id} className="flex items-start gap-3 rounded-xl border border-border p-3.5">
+                <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                  a.severity === "high"   ? "bg-destructive/10 text-destructive" :
+                  a.severity === "medium" ? "bg-warning/15 text-warning-foreground" :
+                  "bg-accent-soft text-accent"
+                }`}>
+                  <AlertTriangle className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">{a.title}</p>
+                  <p className="text-xs text-muted-foreground">{a.time} · {a.responder}</p>
+                </div>
+                <SeverityBadge severity={a.severity} />
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* Activity timeline + quick actions */}
+      <div className="mt-6 grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2 border-border/60 p-5">
+          <h3 className="font-semibold">Activity timeline · today</h3>
+          <div className="mt-4 space-y-3">
+            {liveEvents.map(e => (
+              <div key={e.id} className="flex items-start gap-3 border-b border-border/60 pb-3 last:border-0">
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                  <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">{e.time}</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">{e.title}</p>
+                  <p className="text-xs text-muted-foreground">{e.reasoning}</p>
+                </div>
+                <Badge variant="secondary" className="text-[10px]">{e.confidence}%</Badge>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="border-border/60 p-5">
+          <h3 className="font-semibold">Quick actions</h3>
+          <div className="mt-4 grid gap-2">
+            {/* Buttons with real actions — no dead spans */}
+            <Button variant="outline" className="justify-start">
+              <MessageSquare className="mr-2 h-4 w-4" /> Message Margaret
+            </Button>
+            <Button variant="outline" className="justify-start">
+              <Bot className="mr-2 h-4 w-4" /> Request AI check-in
+            </Button>
+            <Button asChild variant="outline" className="justify-start">
+              <Link to="/app/book"><Plus className="mr-2 h-4 w-4" /> Book a care visit</Link>
+            </Button>
+            <Button variant="outline" className="justify-start">
+              <Phone className="mr-2 h-4 w-4" /> Call assigned carer
+            </Button>
+            <Button asChild variant="outline" className="justify-start">
+              <Link to="/app/history"><Calendar className="mr-2 h-4 w-4" /> View care schedule</Link>
+            </Button>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }
 
-function AdminDashboard() {
+function StatusPill({ icon: Icon, label, value, tone }: {
+  icon: typeof Heart;
+  label: string;
+  value: string;
+  tone: "success" | "warning" | "destructive";
+}) {
+  const tones = {
+    success:     "border-accent/20 bg-accent-soft/40",
+    warning:     "border-warning/30 bg-warning/10",
+    destructive: "border-destructive/30 bg-destructive/10",
+  };
   return (
-    <div className="animate-fade-in space-y-8">
-      <PageHeader
-        title="Platform Overview"
-        subtitle="System health and platform activity at a glance"
-        badge={
-          <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success">
-            <span className="relative flex h-1.5 w-1.5"><span className="pulse-dot absolute inline-flex h-full w-full rounded-full bg-success opacity-75" /><span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" /></span>
-            Live
-          </span>
-        }
-      />
-
-      {/* KPI row */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={<Users className="h-5 w-5" />}         label="Active Users"    value="2,847" trend="+12%"  color="primary" />
-        <StatCard icon={<CalendarCheck className="h-5 w-5" />} label="Total Bookings"  value="1,234" trend="+8%"   color="accent" />
-        <StatCard icon={<Activity className="h-5 w-5" />}      label="Platform Uptime" value="99.9%"              color="accent" />
-        <StatCard icon={<AlertTriangle className="h-5 w-5" />} label="Open Disputes"   value="3"                  color="destructive" />
+    <div className={`flex items-center gap-3 rounded-xl border ${tones[tone]} p-3`}>
+      <Icon className="h-4 w-4 text-muted-foreground" />
+      <div className="min-w-0">
+        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="truncate text-sm font-medium">{value}</p>
       </div>
+    </div>
+  );
+}
 
-      {/* System health + role breakdown */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {/* System Health */}
-        <div className="rounded-xl border border-border bg-card shadow-card p-6">
-          <h3 className="mb-4 flex items-center gap-2 font-semibold">
-            <Server className="h-4 w-4 text-primary" /> System Health
-          </h3>
-          <div className="space-y-3">
-            {[
-              { name: "API Server",            status: "Healthy",  pct: 99.9 },
-              { name: "Database",              status: "Healthy",  pct: 99.8 },
-              { name: "AI Matching Engine",    status: "Healthy",  pct: 100  },
-              { name: "Notification Service", status: "Warning",  pct: 95.2 },
-            ].map(s => (
-              <div key={s.name} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className={`h-2 w-2 rounded-full ${s.status === "Healthy" ? "bg-success" : "bg-warning"}`} />
-                  <span className="text-sm">{s.name}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="h-1.5 w-24 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${s.status === "Healthy" ? "bg-success" : "bg-warning"}`}
-                      style={{ width: `${s.pct}%` }}
-                    />
-                  </div>
-                  <span className="w-12 text-right text-xs text-muted-foreground">{s.pct}%</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Role breakdown */}
-        <div className="rounded-xl border border-border bg-card shadow-card p-6">
-          <h3 className="mb-4 flex items-center gap-2 font-semibold">
-            <ShieldCheck className="h-4 w-4 text-primary" /> User Role Breakdown
-          </h3>
-          <div className="space-y-3">
-            {[
-              { role: "Families",       count: 1842, barClass: "bg-primary",     pct: 65 },
-              { role: "Care Providers", count: 756,  barClass: "bg-accent",      pct: 27 },
-              { role: "Organisations",  count: 198,  barClass: "bg-warning",     pct: 7  },
-              { role: "Admins",         count: 5,    barClass: "bg-destructive", pct: 1  },
-            ].map(r => (
-              <div key={r.role} className="space-y-1">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">{r.role}</span>
-                  <span className="text-muted-foreground">{r.count.toLocaleString()}</span>
-                </div>
-                <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                  <div className={`h-full rounded-full ${r.barClass}`} style={{ width: `${r.pct}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+function ChartCard({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-border p-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium">{title}</p>
+        {hint && <p className="text-[10px] text-muted-foreground">{hint}</p>}
       </div>
-
-      {/* Recent Disputes */}
-      <div className="rounded-xl border border-border bg-card shadow-card p-6">
-        <h3 className="mb-4 font-semibold">Recent Disputes</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                <th className="pb-3 font-medium">ID</th>
-                <th className="pb-3 font-medium">Customer</th>
-                <th className="pb-3 font-medium">Provider</th>
-                <th className="pb-3 font-medium">Status</th>
-                <th className="pb-3 font-medium">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { id: "D-001", customer: "Jane C.",  provider: "John D.",    status: "Under Review" },
-                { id: "D-002", customer: "Mark S.",  provider: "Emma W.",    status: "Pending"      },
-                { id: "D-003", customer: "Lucy T.",  provider: "Michael R.", status: "Resolved"     },
-              ].map(d => (
-                <tr key={d.id} className="border-b border-border last:border-0">
-                  <td className="py-3 font-mono text-xs font-medium text-muted-foreground">{d.id}</td>
-                  <td className="py-3 font-medium">{d.customer}</td>
-                  <td className="py-3">{d.provider}</td>
-                  <td className="py-3">
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                      d.status === "Resolved"     ? "bg-success/10 text-success" :
-                      d.status === "Under Review" ? "bg-primary-soft text-primary" :
-                      "bg-warning/10 text-warning-foreground"
-                    }`}>{d.status}</span>
-                  </td>
-                  <td className="py-3">
-                    <button className="text-xs font-medium text-primary hover:underline">Review</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <div className="mt-3">{children}</div>
     </div>
   );
 }
