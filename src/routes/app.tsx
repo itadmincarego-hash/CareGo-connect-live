@@ -13,22 +13,36 @@ import { useAuthStore } from "@/store/authStore";
 import { familyUser } from "@/lib/demo-data";
 
 export const Route = createFileRoute("/app")({
-  // ── Auth guard ──────────────────────────────────────────────────────────────
-  // Runs before the route renders. Reads sessionStorage directly (not the
-  // Zustand store) so it works even on a hard refresh before React mounts.
   beforeLoad: () => {
     try {
       const raw = sessionStorage.getItem("carego_auth");
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed?.token) return; // ✅ valid session — allow through
+        if (parsed?.token) return;
       }
     } catch {}
-    // No valid session — send to login
     throw redirect({ to: "/login" });
   },
   component: AppLayout,
 });
+
+// Map demo emails → display names
+const DEMO_NAMES: Record<string, string> = {
+  "family@carego.com":   "Sarah",
+  "provider@carego.com": "Aisha",
+  "business@carego.com": "Bristol Care",
+  "admin@carego.com":    "Admin",
+};
+
+function resolveDisplayName(email: string | null | undefined): string {
+  if (!email) return familyUser.name;
+  const key = email.toLowerCase();
+  if (DEMO_NAMES[key]) return DEMO_NAMES[key];
+  // Real user — derive from email prefix
+  return email.split("@")[0]
+    .replace(/[._]/g, " ")
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
 
 const nav = [
   { group: "Care", items: [
@@ -58,8 +72,7 @@ function UserMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const isDemo    = !email || email === familyUser.email || email.endsWith("@carego.com");
-  const name      = isDemo ? familyUser.name : email!.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  const name      = resolveDisplayName(email);
   const photo     = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4`;
   const roleLabel = role === "provider" ? "Care Provider" : role === "business" ? "Organisation" : role === "admin" ? "Admin" : "Family Plus";
 
@@ -122,8 +135,7 @@ function AppLayout() {
   const email    = useAuthStore(s => s.email);
   const role     = useAuthStore(s => s.role);
 
-  const isDemo    = !email || email.endsWith("@carego.com");
-  const name      = isDemo ? familyUser.name : email!.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  const name      = resolveDisplayName(email);
   const photo     = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4`;
   const roleLabel = role === "provider" ? "Care Provider" : role === "business" ? "Organisation" : role === "admin" ? "Admin" : "Family Plus";
 
@@ -197,7 +209,6 @@ function AppLayout() {
   );
 }
 
-// Shared page header
 export function PageHeader({ title, subtitle, action, badge }: { title: string; subtitle?: string; action?: React.ReactNode; badge?: React.ReactNode }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
