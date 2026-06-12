@@ -10,18 +10,54 @@ import {
 } from "lucide-react";
 import { StatCard, SeverityBadge, LiveDot, MiniLineChart, MiniBarChart } from "@/components/app/widgets";
 import { careRecipient, stats, liveEvents, aiDecisions, alerts, heartRateChart, wellbeingChart, currentBooking } from "@/lib/demo-data";
+import { useAuthStore } from "@/store/authStore";
 
 export const Route = createFileRoute("/app/family")({
   head: () => ({ meta: [{ title: "Family dashboard — CareGo" }] }),
   component: FamilyDashboard,
 });
 
+// Derive a friendly first name from the logged-in user
+function useDisplayName() {
+  const email = useAuthStore(s => s.email);
+  const role  = useAuthStore(s => s.role);
+
+  // Known demo accounts
+  const demoNames: Record<string, string> = {
+    "family@carego.com":   "Sarah",
+    "provider@carego.com": "Aisha",
+    "business@carego.com": "Bristol Care",
+    "admin@carego.com":    "Admin",
+  };
+
+  if (!email) return "there";
+  if (demoNames[email.toLowerCase()]) return demoNames[email.toLowerCase()];
+  // Real user — derive from email prefix
+  return email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase()).split(" ")[0];
+}
+
+// Time-based greeting
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
+
 function FamilyDashboard() {
+  const name = useDisplayName();
+  const role = useAuthStore(s => s.role);
+  const isAdmin = role === "admin";
+
   return (
     <div>
       <PageHeader
-        title={`Good afternoon, Sarah`}
-        subtitle={`Here's how ${careRecipient.name} is doing today.`}
+        title={`${greeting()}, ${name}`}
+        subtitle={
+          isAdmin
+            ? "Admin view — showing demo family data."
+            : `Here's how ${careRecipient.name} is doing today.`
+        }
         badge={<Badge className="border-accent/20 bg-accent-soft text-accent hover:bg-accent-soft"><LiveDot /><span className="ml-1.5">All systems normal</span></Badge>}
         action={<div className="flex gap-2"><Button variant="outline" size="sm"><MessageSquare className="mr-1.5 h-4 w-4" /> Message</Button><Button asChild size="sm" className="bg-gradient-hero shadow-glow"><Link to="/app/book"><Plus className="mr-1.5 h-4 w-4" /> Book support</Link></Button></div>}
       />
