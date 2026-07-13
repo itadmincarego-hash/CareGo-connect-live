@@ -6,25 +6,50 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, AlertCircle } from "lucide-react";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({ meta: [{ title: "Contact — CareGo" }] }),
   component: ContactPage,
 });
 
+const SHEET_URL = import.meta.env.VITE_GOOGLE_SHEET_URL as string;
+
 function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    // Simulate async submission without blocking the thread
-    setTimeout(() => {
+    setError(null);
+
+    const form = e.currentTarget;
+    const body = {
+      firstName:    (form.elements.namedItem("firstName")    as HTMLInputElement).value,
+      lastName:     (form.elements.namedItem("lastName")     as HTMLInputElement).value,
+      email:        (form.elements.namedItem("email")        as HTMLInputElement).value,
+      organisation: (form.elements.namedItem("organisation") as HTMLInputElement).value,
+      message:      (form.elements.namedItem("message")      as HTMLTextAreaElement).value,
+    };
+
+    try {
+      const res = await fetch(SHEET_URL, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (json.result === "success") {
+        setSubmitted(true);
+      } else {
+        setError("Something went wrong. Please try again or email us directly.");
+      }
+    } catch {
+      setError("Unable to send your message. Please check your connection and try again.");
+    } finally {
       setLoading(false);
-      setSubmitted(true);
-    }, 800);
+    }
   }
 
   return (
@@ -45,7 +70,7 @@ function ContactPage() {
               </p>
               <Button
                 variant="outline"
-                onClick={() => setSubmitted(false)}
+                onClick={() => { setSubmitted(false); setError(null); }}
               >
                 Send another message
               </Button>
@@ -89,6 +114,14 @@ function ContactPage() {
                   required
                 />
               </div>
+
+              {error && (
+                <div className="sm:col-span-2 flex items-start gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
               <Button
                 type="submit"
                 disabled={loading}
