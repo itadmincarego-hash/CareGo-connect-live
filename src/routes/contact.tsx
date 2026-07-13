@@ -24,20 +24,24 @@ function ContactPage() {
     setLoading(true);
 
     const form = e.currentTarget;
-    const formData = new FormData();
-    formData.append("firstName",    (form.elements.namedItem("firstName")    as HTMLInputElement).value);
-    formData.append("lastName",     (form.elements.namedItem("lastName")     as HTMLInputElement).value);
-    formData.append("email",        (form.elements.namedItem("email")        as HTMLInputElement).value);
-    formData.append("organisation", (form.elements.namedItem("organisation") as HTMLInputElement).value);
-    formData.append("message",      (form.elements.namedItem("message")      as HTMLTextAreaElement).value);
 
-    // Apps Script requires no-cors + FormData to avoid CORS redirect errors.
-    // We cannot read the response in no-cors mode, so we optimistically
-    // show success after the request fires.
+    // Apps Script reads e.parameter — requires application/x-www-form-urlencoded
+    // FormData (multipart) is silently ignored by Apps Script doPost.
+    const params = new URLSearchParams({
+      firstName:    (form.elements.namedItem("firstName")    as HTMLInputElement).value,
+      lastName:     (form.elements.namedItem("lastName")     as HTMLInputElement).value,
+      email:        (form.elements.namedItem("email")        as HTMLInputElement).value,
+      organisation: (form.elements.namedItem("organisation") as HTMLInputElement).value,
+      message:      (form.elements.namedItem("message")      as HTMLTextAreaElement).value,
+    });
+
+    // no-cors is required for cross-origin Apps Script — response is always opaque.
+    // We optimistically show success after the request fires.
     await fetch(SHEET_URL, {
       method: "POST",
       mode: "no-cors",
-      body: formData,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
     });
 
     setLoading(false);
@@ -110,7 +114,7 @@ function ContactPage() {
                 disabled={loading}
                 className="sm:col-span-2 bg-primary text-primary-foreground hover:bg-primary/90"
               >
-                {loading ? "Sending…" : "Send message"}
+                {loading ? "Sending\u2026" : "Send message"}
               </Button>
             </form>
           )}
