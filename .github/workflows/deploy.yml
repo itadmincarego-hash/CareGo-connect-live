@@ -33,6 +33,7 @@ jobs:
         run: bun run build
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_GOOGLE_SHEET_URL: ${{ secrets.VITE_GOOGLE_SHEET_URL }}
 
       # Copy index.html to 404.html so GitHub Pages serves the SPA
       # for all deep routes (e.g. /login, /signup, /app/family)
