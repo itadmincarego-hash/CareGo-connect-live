@@ -13,7 +13,10 @@ export const Route = createFileRoute("/contact")({
   component: ContactPage,
 });
 
-const SHEET_URL = import.meta.env.VITE_GOOGLE_SHEET_URL as string;
+// Hardcoded Apps Script URL — no-cors GET with query string is the
+// only approach that reliably reaches Apps Script doGet from a browser.
+const SHEET_URL =
+  "https://script.google.com/macros/s/AKfycbz7fwwaOfRrloKs73rMv-BcMvHUm0Bn4edvrvVC2zoLfZEvD5sJuluOsWfHOgdd_pnz/exec";
 
 function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -25,8 +28,6 @@ function ContactPage() {
 
     const form = e.currentTarget;
 
-    // Apps Script reads e.parameter — requires application/x-www-form-urlencoded
-    // FormData (multipart) is silently ignored by Apps Script doPost.
     const params = new URLSearchParams({
       firstName:    (form.elements.namedItem("firstName")    as HTMLInputElement).value,
       lastName:     (form.elements.namedItem("lastName")     as HTMLInputElement).value,
@@ -35,13 +36,11 @@ function ContactPage() {
       message:      (form.elements.namedItem("message")      as HTMLTextAreaElement).value,
     });
 
-    // no-cors is required for cross-origin Apps Script — response is always opaque.
-    // We optimistically show success after the request fires.
-    await fetch(SHEET_URL, {
-      method: "POST",
+    // GET + query string is the most reliable way to hit Apps Script
+    // from a browser under no-cors — no preflight, no Content-Type issues.
+    await fetch(`${SHEET_URL}?${params.toString()}`, {
+      method: "GET",
       mode: "no-cors",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: params.toString(),
     });
 
     setLoading(false);
@@ -114,7 +113,7 @@ function ContactPage() {
                 disabled={loading}
                 className="sm:col-span-2 bg-primary text-primary-foreground hover:bg-primary/90"
               >
-                {loading ? "Sending\u2026" : "Send message"}
+                {loading ? "Sending…" : "Send message"}
               </Button>
             </form>
           )}
