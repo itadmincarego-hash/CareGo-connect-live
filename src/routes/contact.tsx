@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Mail, MapPin, Phone, CheckCircle } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({ meta: [{ title: "Contact — CareGo" }] }),
@@ -33,9 +33,9 @@ function ContactPage() {
       title="Talk to our team."
       subtitle="Book a demo, ask about pricing, or partner with us."
     >
-      <div className="grid gap-10 lg:grid-cols-3">
+      <div className="grid gap-10">
         {/* Form card */}
-        <Card className="border-border/60 p-6 lg:col-span-2">
+        <Card className="border-border/60 p-6 max-w-2xl">
           {submitted ? (
             <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
               <CheckCircle className="h-12 w-12 text-primary" />
@@ -99,37 +99,6 @@ function ContactPage() {
             </form>
           )}
         </Card>
-
-        {/* Contact info sidebar */}
-        <div className="space-y-4">
-          <Card className="border-border/60 p-5">
-            <div className="flex items-center gap-3">
-              <Mail className="h-5 w-5 text-primary shrink-0" />
-              <div>
-                <p className="text-sm font-medium">hello@carego.health</p>
-                <p className="text-xs text-muted-foreground">Reply within 4 working hours</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="border-border/60 p-5">
-            <div className="flex items-center gap-3">
-              <Phone className="h-5 w-5 text-primary shrink-0" />
-              <div>
-                <p className="text-sm font-medium">+44 117 555 0192</p>
-                <p className="text-xs text-muted-foreground">Mon–Fri · 8am–8pm</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="border-border/60 p-5">
-            <div className="flex items-center gap-3">
-              <MapPin className="h-5 w-5 text-primary shrink-0" />
-              <div>
-                <p className="text-sm font-medium">Engine Shed, Bristol</p>
-                <p className="text-xs text-muted-foreground">Station Approach · BS1 6QH</p>
-              </div>
-            </div>
-          </Card>
-        </div>
       </div>
     </PublicShell>
   );
